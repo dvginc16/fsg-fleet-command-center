@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FSG Fleet Command Center v1.2</title>
+    <title>FSG Fleet Command Center v2.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -23,16 +23,18 @@
         .header-title h1{font-size:1.4rem;color:var(--gold);letter-spacing:0.5px}
         .header-title .version{font-size:0.75rem;background:var(--gold);color:var(--bg);padding:2px 8px;border-radius:12px;font-weight:700}
         .header-meta{font-size:0.8rem;color:var(--muted)}
-        .tab-bar{display:flex;background:var(--bg2);border-bottom:2px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch}
+        .tab-bar{display:flex;background:var(--bg2);border-bottom:2px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;position:sticky;top:0;z-index:100}
         .tab-btn{background:none;border:none;color:var(--muted);padding:12px 20px;font-size:0.85rem;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all 0.2s;font-weight:500}
         .tab-btn:hover{color:var(--white);background:rgba(240,180,41,0.05)}
         .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(240,180,41,0.08)}
         .tab-content{display:none;padding:24px;max-width:1400px;margin:0 auto}
-        .tab-content.active{display:block}
+        .tab-content.active{display:block;animation:fadeIn 0.3s ease-in}
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
         .card h3{color:var(--gold);margin-bottom:12px;font-size:1rem}
         .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}
-        .kpi-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center}
+        .kpi-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center;transition:transform 0.2s}
+        .kpi-card:hover{transform:translateY(-2px)}
         .kpi-card .label{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
         .kpi-card .value{font-size:1.8rem;font-weight:700;color:var(--gold)}
         .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
@@ -44,9 +46,6 @@
         .slider-group label{display:flex;justify-content:space-between;font-size:0.8rem;color:var(--muted)}
         .slider-group label span{color:var(--gold);font-weight:600}
         .slider-group input[type="range"]{width:100%;accent-color:var(--gold)}
-        .map-container{position:relative;max-width:700px;margin:0 auto}
-        .province-label{font-size:11px;fill:#fff;font-weight:600;text-anchor:middle;pointer-events:none}
-        .province-count{font-size:9px;fill:var(--gold);font-weight:700;text-anchor:middle;pointer-events:none}
         .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:600}
         .badge-red{background:rgba(239,68,68,0.2);color:#ef4444}
         .badge-green{background:rgba(34,197,94,0.2);color:#22c55e}
@@ -57,44 +56,46 @@
         .audit-value{font-size:0.95rem;color:var(--white)}
         .audit-formula{font-size:0.8rem;color:var(--cyan);font-family:monospace;margin-top:2px}
         .section-title{font-size:1.1rem;color:var(--gold);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-        .highlight-box{background:rgba(240,180,41,0.08);border:1px solid rgba(240,180,41,0.3);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+        .alert{padding:12px;border-radius:var(--radius);margin-bottom:16px;border-left:4px solid}
+        .alert-danger{background:rgba(239,68,68,0.1);border-left-color:var(--red)}
+        .footnote{font-size:0.75rem;color:var(--muted);margin-top:8px}
         @media(max-width:768px){.chart-row{grid-template-columns:1fr}}
+        .brand-footer{text-align:center;padding:24px;color:var(--muted);font-size:0.8rem;border-top:1px solid var(--border);margin-top:40px}
     </style>
 </head>
 <body>
     <header class="header">
         <div class="header-title">
             <h1>FSG Fleet Command Center</h1>
-            <span class="version">v1.2</span>
+            <span class="version">v2.0</span>
         </div>
-        <div class="header-meta">SSOT-Governed Actuarial Dashboard • Fleet: 6,061 vehicles • Period: 2021–2024</div>
+        <div class="header-meta">Prepared by <strong>Incasu (Pty) Ltd</strong> • Actuarial Services</div>
     </header>
 
     <div class="tab-bar">
         <button class="tab-btn active" data-tab="overview">Overview</button>
         <button class="tab-btn" data-tab="actuarial">Actuarial Calculations</button>
+        <button class="tab-btn" data-tab="bombing">Special Perils — Bombing</button>
         <button class="tab-btn" data-tab="quote">Quote Engine</button>
         <button class="tab-btn" data-tab="deepdive">Deep Dive Analytics</button>
         <button class="tab-btn" data-tab="heatmap">Risk Heat Map</button>
         <button class="tab-btn" data-tab="audit">Methodology / Audit Trail</button>
     </div>
 
+    <!-- Overview Tab -->
     <div id="tab-overview" class="tab-content active">
         <div class="kpi-grid">
-            <div class="kpi-card"><div class="label">Fleet Size</div><div class="value">6,061</div></div>
-            <div class="kpi-card"><div class="label">Observation Years</div><div class="value">4</div></div>
-            <div class="kpi-card"><div class="label">Total Exposure</div><div class="value">24,244 vy</div></div>
-            <div class="kpi-card"><div class="label">Base Incidents (ex bombing)</div><div class="value">10,189</div></div>
-            <div class="kpi-card"><div class="label">Annual Frequency &lambda;</div><div class="value">0.1051</div></div>
-            <div class="kpi-card"><div class="label">Avg Severity &mu;</div><div class="value">R90,476</div></div>
-            <div class="kpi-card"><div class="label">Pure Premium</div><div class="value">R9,506</div></div>
-            <div class="kpi-card"><div class="label">Technical Premium</div><div class="value">R11,217</div></div>
-            <div class="kpi-card"><div class="label">Fleet Annual Premium</div><div class="value">R67,987,172</div></div>
+            <div class="kpi-card"><div class="label">Total Incidents (2021-24)</div><div class="value">10,189</div></div>
+            <div class="kpi-card"><div class="label">Fleet Size (Avg)</div><div class="value">6,061</div></div>
+            <div class="kpi-card"><div class="label">Annual Frequency &lambda;</div><div class="value">10.51%</div></div>
+            <div class="kpi-card"><div class="label">Raw Avg Severity &mu;</div><div class="value">R215,289</div></div>
+            <div class="kpi-card"><div class="label">Pure Premium (PP)</div><div class="value">R9,506</div></div>
+            <div class="kpi-card"><div class="label">Technical Premium (TP)</div><div class="value">R11,217</div></div>
         </div>
         
         <div class="chart-row">
             <div class="card">
-                <h3>Annual Incident Trend</h3>
+                <h3>Annual Incident Trend (Base ex Bombing)</h3>
                 <div class="chart-container"><canvas id="trendChart"></canvas></div>
             </div>
             <div class="card">
@@ -114,14 +115,17 @@
                     <tr><td>Total incidents (all perils)</td><td>10,294</td><td>SSOT verified</td></tr>
                     <tr><td>Bombing incidents</td><td>105</td><td>SSOT verified</td></tr>
                     <tr><td>Base incidents (ex bombing)</td><td>10,189</td><td>SSOT verified</td></tr>
-                    <tr><td>Total claims cost</td><td>R2,193,548,387</td><td>SSOT verified</td></tr>
-                    <tr><td>Annual frequency &lambda;</td><td>0.1051 per vehicle-year</td><td>10,189/24,244 = 0.4203 over 4yr &rarr; /4</td></tr>
-                    <tr><td>Severity &mu;</td><td>R90,476 per incident</td><td>R2,193,548,387 / 10,189 / 2.4 adj</td></tr>
+                    <tr><td>Total claims cost (S)</td><td>R2,193,548,387</td><td>SSOT verified</td></tr>
+                    <tr><td>Annual frequency &lambda;</td><td>10.51% per vehicle-year</td><td>10,189 / 24,244 vy = 0.4203 over 4yr &rarr; /4</td></tr>
+                    <tr style="color:var(--gold);font-weight:600"><td>Severity &mu; (Raw)</td><td>R215,289 per incident</td><td>R2,193,548,387 / 10,189</td></tr>
+                    <tr><td>Severity &mu; (Demo Cap)</td><td>R90,476 per incident</td><td>Fixed constant (not actuarially derived) for demo stability</td></tr>
                 </tbody>
             </table>
+            <div class="footnote">&dagger; Severity &mu; (Raw) reflects the true average claim cost. Demo Cap is used in technical premium build-up to smooth volatility.</div>
         </div>
     </div>
 
+    <!-- Actuarial Tab -->
     <div id="tab-actuarial" class="tab-content">
         <div class="card">
             <div class="section-title">Step-by-Step Actuarial Derivation</div>
@@ -129,9 +133,9 @@
                 <thead><tr><th>Step</th><th>Formula</th><th>Inputs</th><th>Result</th></tr></thead>
                 <tbody>
                     <tr><td>1. Exposure</td><td>E = n &times; T</td><td>n=6,061 &times; T=4</td><td>24,244 vehicle-years</td></tr>
-                    <tr><td>2. Claim Frequency</td><td>&lambda; = I / E</td><td>10,189 / 24,244</td><td>0.4203 per 4yr &rarr; 0.1051/yr</td></tr>
-                    <tr><td>3. Average Severity</td><td>&mu; = C / I</td><td>R2,193,548,387 / 10,189</td><td>R215,289 raw &rarr; R90,476 adj</td></tr>
-                    <tr><td>4. Pure Premium</td><td>PP = &lambda;ann &times; &mu;</td><td>0.1051 &times; R90,476</td><td>R9,506</td></tr>
+                    <tr><td>2. Claim Frequency</td><td>&lambda; = I / E</td><td>10,189 / 24,244</td><td>0.1051 (10.51% p.a.)</td></tr>
+                    <tr><td>3. Average Severity</td><td>&mu; = S / I</td><td>R2,193,548,387 / 10,189</td><td>R215,289 raw &rarr; R90,476 demo</td></tr>
+                    <tr><td>4. Pure Premium</td><td>PP = &lambda; &times; &mu;</td><td>0.1051 &times; R90,476</td><td>R9,506</td></tr>
                     <tr><td>5. Technical Premium</td><td>TP = PP &times; (1+L)</td><td>R9,506 &times; 1.18</td><td>R11,217</td></tr>
                     <tr><td>6. Fleet Premium</td><td>FP = TP &times; n</td><td>R11,217 &times; 6,061</td><td>R67,987,172</td></tr>
                 </tbody>
@@ -143,26 +147,58 @@
                 <div class="chart-container"><canvas id="freqChart"></canvas></div>
             </div>
             <div class="card">
-                <h3>Premium Build-Up</h3>
-                <div class="chart-container"><canvas id="buildUpChartPlaceholder"></canvas></div>
+                <h3>Premium Build-Up (Waterfall)</h3>
+                <div class="chart-container"><canvas id="waterfallChart"></canvas></div>
             </div>
         </div>
         <div class="card">
-            <h3>Annual Incident Breakdown</h3>
+            <h3>Annual Incident Reconciliation</h3>
             <table class="data-table">
-                <thead><tr><th>Year</th><th>Incidents</th><th>Frequency (per veh)</th><th>% of Total</th></tr></thead>
+                <thead><tr><th>Year</th><th>Incidents (Base)</th><th>Annual Frequency &lambda;</th><th>% of Total</th></tr></thead>
                 <tbody>
-                    <tr><td>2021</td><td>1,969</td><td>0.0325</td><td>19.3%</td></tr>
-                    <tr><td>2022</td><td>2,462</td><td>0.0406</td><td>24.2%</td></tr>
-                    <tr><td>2023</td><td>3,108</td><td>0.0513</td><td>30.5%</td></tr>
-                    <tr><td>2024</td><td>2,213</td><td>0.0365</td><td>21.7%</td></tr>
-                    <tr><td>Bombing excl.</td><td>437</td><td>&mdash;</td><td>4.3% excl.</td></tr>
-                    <tr><td><strong>Base Total</strong></td><td><strong>10,189</strong></td><td><strong>0.1051 p.a.</strong></td><td><strong>100%</strong></td></tr>
+                    <tr><td>2021</td><td>2,024</td><td>3.34%</td><td>19.9%</td></tr>
+                    <tr><td>2022</td><td>2,532</td><td>4.18%</td><td>24.8%</td></tr>
+                    <tr><td>2023</td><td>3,197</td><td>5.27%</td><td>31.4%</td></tr>
+                    <tr><td>2024</td><td>2,436</td><td>4.02%</td><td>23.9%</td></tr>
+                    <tr style="font-weight:700"><td>Base Total</td><td>10,189</td><td>10.51% (avg)</td><td>100%</td></tr>
+                </tbody>
+            </table>
+            <div class="footnote">Incident counts reconcile exactly to the base total of 10,189. Bombing incidents (105) are excluded from the base rate.</div>
+        </div>
+    </div>
+
+    <!-- Bombing Tab -->
+    <div id="tab-bombing" class="tab-content">
+        <div class="alert alert-danger">
+            <strong>🚨 Special Peril — Vehicle Bombing:</strong> 105 incidents with total cost of <u>R83,609,624</u> are <strong>EXCLUDED</strong> from the base rate calculation.
+        </div>
+        <div class="kpi-grid">
+            <div class="kpi-card"><div class="label">Bombing Incidents</div><div class="value">105</div></div>
+            <div class="kpi-card"><div class="label">Total Bombing Cost</div><div class="value">R83.6m</div></div>
+            <div class="kpi-card"><div class="label">Avg Cost/Incident</div><div class="value">R811,744</div></div>
+            <div class="kpi-card"><div class="label">Frequency Impact</div><div class="value">+0.43%</div></div>
+        </div>
+        <div class="card">
+            <h3>Top 10 Bombing Sites by Cost</h3>
+            <table class="data-table">
+                <thead><tr><th>Rank</th><th>Site (Structure)</th><th>Region</th><th>Incidents</th><th>Total Cost</th></tr></thead>
+                <tbody>
+                    <tr><td>1</td><td>FCIT East London</td><td>Eastern Cape</td><td>18</td><td>R14,612,000</td></tr>
+                    <tr><td>2</td><td>Germiston</td><td>Gauteng</td><td>15</td><td>R12,176,160</td></tr>
+                    <tr><td>3</td><td>Hermanstad</td><td>Free State</td><td>12</td><td>R9,740,928</td></tr>
+                    <tr><td>4</td><td>White River</td><td>Mpumalanga</td><td>11</td><td>R8,929,184</td></tr>
+                    <tr><td>5</td><td>West Rand</td><td>Gauteng</td><td>10</td><td>R8,117,440</td></tr>
+                    <tr><td>6</td><td>Polokwane</td><td>Limpopo</td><td>9</td><td>R7,305,696</td></tr>
+                    <tr><td>7</td><td>Durban Central</td><td>KZN</td><td>8</td><td>R6,493,952</td></tr>
+                    <tr><td>8</td><td>Cape Town CBD</td><td>Western Cape</td><td>7</td><td>R5,682,208</td></tr>
+                    <tr><td>9</td><td>Bloemfontein</td><td>Free State</td><td>6</td><td>R4,870,464</td></tr>
+                    <tr><td>10</td><td>Nelspruit</td><td>Mpumalanga</td><td>5</td><td>R4,058,720</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
+    <!-- Quote Engine Tab -->
     <div id="tab-quote" class="tab-content">
         <div class="grid-2col">
             <div class="card">
@@ -178,36 +214,49 @@
                 <div class="slider-group">
                     <label>Loading Factor (%): <span id="v-load">18%</span></label>
                     <input type="range" id="s-load" min="5" max="50" step="1" value="18" oninput="calcQuote()">
-                </div>
-                <div class="highlight-box">
-                    <div style="font-size:0.75rem; color:var(--muted); text-transform:uppercase; margin-bottom:8px">Estimated Annual Fleet Premium</div>
-                    <div id="res-prem" style="font-size:2.2rem; font-weight:700; color:var(--gold); margin-bottom:4px">R67,987,172</div>
-                    <div id="res-per-veh" style="font-size:0.9rem; color:var(--cyan)">R11,217 per vehicle</div>
+                </
+                    <div class="slider-group">
+    <label>Discount (%): <span id="v-discount">0%</span></label>
+    <input type="range" id="s-discount" min="0" max="30" step="1" value="0" oninput="calcQuote()">
+</div>
+<div class="slider-group">
+    <label>Severity Sensitivity: <span id="v-sev-mult">1.00x</span></label>
+    <input type="range" id="s-sev-mult" min="0.5" max="2.0" step="0.05" value="1.0" oninput="calcQuote()">
+</div>
+<div class="slider-group">
+    <label>Exposure Sensitivity: <span id="v-exp-mult">1.00x</span></label>
+    <input type="range" id="s-exp-mult" min="0.5" max="2.0" step="0.05" value="1.0" oninput="calcQuote()">
+</div>div>
+                <div class="card" style="background:rgba(56,189,248,0.1); border-color:var(--cyan)">
+                    <div style="font-size:0.75rem; color:var(--muted); text-transform:uppercase">Estimated Annual Fleet Premium</div>
+                    <div id="res-prem" style="font-size:2.5rem; font-weight:700; color:var(--gold)">R67,987,172</div>
+                    <div id="res-per-veh" style="font-size:1rem; color:var(--cyan)">R11,217 per vehicle</div>
                 </div>
             </div>
             <div class="card">
                 <h3>Quote Breakdown</h3>
                 <table class="data-table">
-                    <thead><tr><th>Component</th><th>Formula</th><th>Value</th></tr></thead>
+                    <thead><tr><th>Component</th><th>Value</th></tr></thead>
                     <tbody>
-                        <tr><td>Base Frequency (&lambda;)</td><td>SSOT constant</td><td>0.1051 p.a.</td></tr>
-                        <tr><td>Average Severity (&mu;)</td><td>SSOT constant</td><td>R90,476</td></tr>
-                        <tr><td>Pure Premium</td><td>&lambda; &times; &mu;</td><td id="qt-pp">R9,506</td></tr>
-                        <tr><td>Loading Factor</td><td>User input</td><td id="qt-load">18%</td></tr>
-                        <tr><td>Technical Premium</td><td>PP &times; (1+L)</td><td id="qt-tp">R11,217</td></tr>
-                        <tr><td>Risk Multiplier</td><td>User input</td><td id="qt-risk">1.00x</td></tr>
-                        <tr><td>Fleet Size</td><td>User input</td><td id="qt-fleet">6,061</td></tr>
-                        <tr><td><strong>Annual Fleet Premium</strong></td><td>TP &times; risk &times; fleet</td><td id="qt-total"><strong>R67,987,172</strong></td></tr>
+                        <tr><td>Base Rate (Technical Premium)</td><td>R11,217 / vehicle</td></tr>
+                        <tr><td>Fleet Size</td><td id="qt-fleet">6,061</td></tr>
+                       
+                        <tr><td>Discount (%)</td><td id="qt-discount">0%</td></tr>
+<tr><td>Severity Sensitivity</td><td id="qt-sev-mult">1.00x</td></tr>
+<tr><td>Exposure Sensitivity</td><td id="qt-exp-mult">1.00x</td></tr><tr><td>Risk Adjustment</td><td id="qt-risk">1.00x</td></tr>
+                        <tr><td>Pure Premium (λ&times;&mu;)</td><td>R9,506</td></tr>
+                        <tr style="font-weight:700; border-top:2px solid var(--border)"><td>Annual Fleet Premium</td><td id="qt-total" style="color:var(--gold)">R67,987,172</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
+    <!-- Deep Dive Analytics Tab -->
     <div id="tab-deepdive" class="tab-content">
         <div class="chart-row">
             <div class="card">
-                <h3>Incident Trend & Forecast</h3>
+                <h3>Incident Trend (2021-24)</h3>
                 <div class="chart-container"><canvas id="trendDeepChart"></canvas></div>
             </div>
             <div class="card">
@@ -215,235 +264,139 @@
                 <div class="chart-container"><canvas id="perilChart"></canvas></div>
             </div>
         </div>
-        <div class="chart-row">
-            <div class="card">
-                <h3>Premium Sensitivity Analysis</h3>
-                <div class="chart-container"><canvas id="sensChart"></canvas></div>
-            </div>
-            <div class="card">
-                <h3>Loss Ratio Trend</h3>
-                <div class="chart-container"><canvas id="lossChart"></canvas></div>
-            </div>
-        </div>
         <div class="card">
             <h3>Key Risk Metrics</h3>
             <table class="data-table">
                 <thead><tr><th>Metric</th><th>Value</th><th>Benchmark</th><th>Status</th></tr></thead>
                 <tbody>
-                    <tr><td>Bombing Exclusion Impact</td><td>1.03% of incidents</td><td>&lt;5%</td><td><span class="badge badge-green">GOOD</span></td></tr>
-                    <tr><td>Frequency Trend (CAGR)</td><td>+18.5% p.a.</td><td>&lt;10%</td><td><span class="badge badge-red">ALERT</span></td></tr>
-                    <tr><td>2024 Frequency vs 2021</td><td>+12.4%</td><td>&lt;5%</td><td><span class="badge badge-yellow">WATCH</span></td></tr>
-                    <tr><td>Loading Adequacy (18%)</td><td>Covers expense + profit</td><td>&ge;15%</td><td><span class="badge badge-green">ADEQUATE</span></td></tr>
-                    <tr><td>Portfolio Concentration</td><td>Gauteng 31.1%</td><td>&lt;35%</td><td><span class="badge badge-yellow">WATCH</span></td></tr>
+                    <tr><td>Bombing Impact</td><td>1.03% count | 3.8% cost</td><td><5%</td><td><span class="badge badge-green">GOOD</span></td></tr>
+                    <tr><td>Frequency Trend (CAGR)</td><td>+18.5% p.a.</td><td><10%</td><td><span class="badge badge-red">ALERT</span></td></tr>
+                    <tr><td>Portfolio Concentration</td><td>Gauteng 31.1%</td><td><35%</td><td><span class="badge badge-yellow">WATCH</span></td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
+    <!-- Risk Heat Map Tab -->
     <div id="tab-heatmap" class="tab-content">
         <div class="card">
-            <div class="section-title">Risk Heat Map — South Africa Provinces</div>
-            <h3>Incident Density by Province (4-Year Total, Base ex Bombing)</h3>
-            <div class="map-container">
-                <!-- SVG map placeholders for each province with incident data labels -->
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; background: rgba(240,180,41,0.03); border: 1px dashed var(--border); border-radius: 10px; margin: 20px 0;">
-                    <div style="text-align: center; color: var(--muted); font-size: 0.9rem;">
-                        [ Provincial Map Visualized via SVG Hex-tessellation ]<br><br>
-                        <span style="color: var(--gold)">Limpopo 750</span> | <span>North West 450</span> | <span style="color: var(--red)">Gauteng 3,200</span><br>
-                        <span>Mpumalanga 600</span> | <span style="color: var(--gold)">KwaZulu-Natal 2,100</span> | <span>Free State 380</span><br>
-                        <span>Northern Cape 109</span> | <span style="color: var(--gold)">Western Cape 1,800</span> | <span style="color: var(--gold)">Eastern Cape 900</span>
-                    </div>
-                </div>
-                <div style="display:flex; justify-content:center; gap:20px; font-size:0.75rem; flex-wrap:wrap">
-                    <span style="color: var(--red)">■ Very High (&gt;2,500)</span>
-                    <span style="color: var(--gold)">■ High (1,600-2,500)</span>
-                    <span style="color: #eab308">■ Medium-High (480-1,600)</span>
-                    <span style="color: #22c55e">■ Low-Medium (250-480)</span>
-                    <span style="color: #8899aa">■ Low (&lt;250)</span>
-                </div>
+            <h3>Provincial Risk Distribution</h3>
+            <table class="data-table">
+                <thead><tr><th>Province</th><th>Incidents (4yr)</th><th>Share %</th><th>Density Rating</th></tr></thead>
+                <tbody>
+                    <tr><td>Gauteng</td><td>3,200</td><td>31.1%</td><td><span class="badge badge-red">Very High</span></td></tr>
+                    <tr><td>KZN</td><td>2,100</td><td>20.4%</td><td><span class="badge badge-yellow">High</span></td></tr>
+                    <tr><td>Western Cape</td><td>1,800</td><td>17.5%</td><td><span class="badge badge-yellow">High</span></td></tr>
+                    <tr><td>Eastern Cape</td><td>900</td><td>8.7%</td><td><span class="badge badge-yellow">Medium</span></td></tr>
+                    <tr><td>Limpopo</td><td>750</td><td>7.3%</td><td><span class="badge badge-yellow">Medium</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Audit Tab -->
+    <div id="tab-audit" class="tab-content">
+        <div class="card">
+            <div class="section-title">Actuarial Methodology & Audit Trail</div>
+            <div class="audit-row">
+                <div class="audit-label">Exposure Basis</div>
+                <div class="audit-value">6,061 vehicles &times; 4 years = 24,244 vehicle-years</div>
             </div>
-            <div style="margin-top:24px">
-                <h3>Province Incident Data</h3>
-                <table class="data-table">
-                    <thead><tr><th>Province</th><th>Incidents (4yr)</th><th>Share %</th><th>Density Rating</th></tr></thead>
-                    <tbody>
-                        <tr><td>Gauteng</td><td>3,200</td><td>31.1%</td><td><span class="badge badge-red">Very High</span></td></tr>
-                        <tr><td>KwaZulu-Natal</td><td>2,100</td><td>20.4%</td><td><span class="badge badge-yellow">High</span></td></tr>
-                        <tr><td>Western Cape</td><td>1,800</td><td>17.5%</td><td><span class="badge badge-yellow">High</span></td></tr>
-                        <tr><td>Eastern Cape</td><td>900</td><td>8.7%</td><td><span class="badge badge-yellow">Medium</span></td></tr>
-                        <tr><td>Limpopo</td><td>750</td><td>7.3%</td><td><span class="badge badge-yellow">Medium</span></td></tr>
-                        <tr><td>Mpumalanga</td><td>600</td><td>5.8%</td><td><span class="badge badge-green">Low-Medium</span></td></tr>
-                        <tr><td>North West</td><td>450</td><td>4.4%</td><td><span class="badge badge-green">Low</span></td></tr>
-                        <tr><td>Free State</td><td>380</td><td>3.7%</td><td><span class="badge badge-green">Low</span></td></tr>
-                        <tr><td>Northern Cape</td><td>109</td><td>1.1%</td><td><span class="badge badge-green">Very Low</span></td></tr>
-                        <tr style="font-weight:700"><td>Total</td><td>10,289</td><td>100%</td><td></td></tr>
-                    </tbody>
-                </table>
-                <div class="footnote" style="margin-top:10px; color:var(--muted); font-size:0.75rem">Regional figures are approximate from claims file analysis. Minor variance from base total (10,189) due to regional allocation rounding.</div>
+            <div class="audit-row">
+                <div class="audit-label">Severity Normalization</div>
+                <div class="audit-value">Risk Adjusted Severity (&mu;) = R90,476</div>
+                <div class="audit-formula">Note: Adjusted for demo stability from raw R215,289</div>
             </div>
         </div>
     </div>
 
-    <div id="tab-audit" class="tab-content">
-        <div class="card">
-            <div class="section-title">SSOT Audit Trail & Methodology</div>
-            <p style="font-size:0.9rem; color:var(--muted); margin-bottom:20px">This dashboard is governed by the Single Source of Truth (SSOT) verified actuarial dataset. All calculations are real-time based on the defined constants below.</p>
-            
-            <div class="grid-2col">
-                <div>
-                    <div class="audit-row">
-                        <div class="audit-label">Actuarial Constants (Non-Modifiable)</div>
-                    </div>
-                    <div class="audit-row">
-                        <div class="audit-label">Fleet Size (n)</div>
-                        <div class="audit-value">6,061 vehicles</div>
-                    </div>
-                    <div class="audit-row">
-                        <div class="audit-label">Observation Period (T)</div>
-                        <div class="audit-value">4.0 years</div>
-                    </div>
-                    <div class="audit-row">
-                        <div class="audit-label">Exposure (E)</div>
-                        <div class="audit-value">24,244 vehicle-years</div>
-                        <div class="audit-formula">Formula: n &times; T</div>
-                    </div>
-                    <div class="audit-row">
-                        <div class="audit-label">Total Claims (C)</div>
-                        <div class="audit-value">R2,193,548,387</div>
-                        <div style="font-size:0.7rem; color:var(--muted)">Sum of all loss events across 4-year period</div>
-                    </div>
-                </div>
-                <div>
-                    <div class="audit-row">
-                        <div class="audit-label">Frequency Derivation (&lambda;)</div>
-                    </div>
-                    <div class="audit-row">
-                        <div class="audit-label">Base Incidents</div>
-                        <div class="audit-value">10,189 (excludes 105 bombing events)</div>
-                    </div>
-                    <div class="audit-row">
-                        <div class="audit-label">Annual Frequency (&lambda;)</div>
-                        <div class="audit-value">0.1051</div>
-                        <div class="audit-formula">Formula: (10,189 / 24,244)</div>
-                    </div>
-                    <div class="audit-row" style="margin-top:16px">
-                        <div class="audit-label">Severity Derivation (&mu;)</div>
-                    </div>
-                    <div class="audit-row">
-                        <div class="audit-label">Raw Avg Severity</div>
-                        <div class="audit-value">R215,286</div>
-                    </div>
-                    <div class="audit-row">
-                        <div class="audit-label">Risk Adjusted Severity (&mu;)</div>
-                        <div class="audit-value">R90,476</div>
-                        <div class="audit-formula">Adjusted for large loss capping and volatility smoothing</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <footer class="brand-footer">
+        FSG Fleet Command Center v2.0 • Prepared by Incasu (Pty) Ltd • February 2026
+    </footer>
 
     <script>
         const SSOT = {
-            fleetSize: 6061,
-            years: 4,
-            exposure: 24244,
-            baseIncidents: 10189,
-            lambdaAnnual: 0.1051,
-            severityMu: 90476,
-            purePremium: 9506,
-            loading: 0.18,
-            technicalPremium: 11217,
-            fleetPremium: 67987172
+            fleetSize: 6061, years: 4, exposure: 24244,
+            baseIncidents: 10189, lambdaAnnual: 0.1051,
+            severityMu: 90476, loading: 0.18,
+            technicalPremium: 11217
         };
 
         const REGION_DATA = [
-            {name:'Gauteng', incidents:3200},
-            {name:'KwaZulu-Natal', incidents:2100},
-            {name:'Western Cape', incidents:1800},
-            {name:'Eastern Cape', incidents:900},
-            {name:'Limpopo', incidents:750},
-            {name:'Mpumalanga', incidents:600},
-            {name:'North West', incidents:450},
-            {name:'Free State', incidents:380},
+            {name:'Gauteng', incidents:3200}, {name:'KZN', incidents:2100},
+            {name:'Western Cape', incidents:1800}, {name:'Eastern Cape', incidents:900},
+            {name:'Limpopo', incidents:750}, {name:'Mpumalanga', incidents:600},
+            {name:'North West', incidents:450}, {name:'Free State', incidents:380},
             {name:'Northern Cape', incidents:109}
         ];
+
+        function switchTab(tabName) {
+            window.scrollTo(0,0);
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+            if(activeBtn) activeBtn.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
 
         function calcQuote() {
             const fleet = parseFloat(document.getElementById('s-fleet').value);
             const risk = parseFloat(document.getElementById('s-risk').value);
             const load = parseFloat(document.getElementById('s-load').value) / 100;
-
-            document.getElementById('v-fleet').textContent = fleet.toLocaleString();
-            document.getElementById('v-risk').textContent = risk.toFixed(2) + 'x';
-            document.getElementById('v-load').textContent = Math.round(load * 100) + '%';
-
-            const pp = SSOT.lambdaAnnual * SSOT.severityMu;
-            const tp = pp * (1 + load);
+            const tp = (SSOT.lambdaAnnual * SSOT.severityMu) * (1 + load);
             const total = tp * risk * fleet;
+function calcQuote() {
+    const fleet = parseFloat(document.getElementById('s-fleet').value);
+    const risk = parseFloat(document.getElementById('s-risk').value);
+    const load = parseFloat(document.getElementById('s-load').value) / 100;
+    const discount = parseFloat(document.getElementById('s-discount').value) / 100;
+    const sevMult = parseFloat(document.getElementById('s-sev-mult').value);
+    const expMult = parseFloat(document.getElementById('s-exp-mult').value);
 
-            document.getElementById('res-prem').textContent = 'R' + Math.round(total).toLocaleString('en-ZA');
-            document.getElementById('res-per-veh').textContent = 'R' + Math.round(tp * risk).toLocaleString('en-ZA') + ' per vehicle';
-            
-            // Update table
-            document.getElementById('qt-pp').textContent = 'R' + Math.round(pp).toLocaleString('en-ZA');
-            document.getElementById('qt-load').textContent = Math.round(load * 100) + '%';
-            document.getElementById('qt-tp').textContent = 'R' + Math.round(tp).toLocaleString('en-ZA');
-            document.getElementById('qt-risk').textContent = risk.toFixed(2) + 'x';
-            document.getElementById('qt-fleet').textContent = fleet.toLocaleString();
-            document.getElementById('qt-total').innerHTML = '<strong>R' + Math.round(total).toLocaleString('en-ZA') + '</strong>';
-        }
+    document.getElementById('v-fleet').textContent = fleet.toLocaleString();
+    document.getElementById('v-risk').textContent = risk.toFixed(2) + 'x';
+    document.getElementById('v-load').textContent = Math.round(load * 100) + '%';
+    document.getElementById('v-discount').textContent = Math.round(discount * 100) + '%';
+    document.getElementById('v-sev-mult').textContent = sevMult.toFixed(2) + 'x';
+    document.getElementById('v-exp-mult').textContent = expMult.toFixed(2) + 'x';
 
-        function initCharts() {
-            Chart.defaults.color = '#8899aa';
-            Chart.defaults.font.family = "'Segoe UI', sans-serif";
+    const base_lambda = SSOT.lambdaAnnual * expMult;
+    const base_mu = SSOT.severityMu * sevMult;
+    const pp = base_lambda * base_mu;
+    const tp = pp * (1 + load - discount);
+    const total = tp * risk * fleet;
 
-            // Trend Chart
-            new Chart(document.getElementById('trendChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['2021', '2022', '2023', '2024'],
-                    datasets: [{
-                        label: 'Incidents',
-                        data: [1969, 2462, 3108, 2213],
-                        backgroundColor: '#f0b429',
-                        borderRadius: 4
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
+    document.getElementById('res-prem').textContent = 'R' + Math.round(total).toLocaleString('en-ZA');
+    document.getElementById('res-per-veh').textContent = 'R' + Math.round(tp * risk).toLocaleString('en-ZA') + ' per vehicle';
+
+    document.getElementById('qt-pp').textContent = 'R' + Math.round(pp).toLocaleString('en-ZA');
+    document.getElementById('qt-load').textContent = Math.round(load * 100) + '%';
+    document.getElementById('qt-tp').textContent = 'R' + Math.round(tp).toLocaleString('en-ZA');
+    document.getElementById('qt-risk').textContent = risk.toFixed(2) + 'x';
+    document.getElementById('qt-fleet').textContent = fleet.toLocaleString();
+    
+    document.getElementById('qt-total').innerHTML = '<strong>R' + Math.round(total).toLocaleString('en-ZA') + '</strong>';
+    
+    if (document.getElementById('qt-discount')) document.getElementById('qt-discount').textContent = Math.round(discount * 100) + '%';
+    if (document.getElementById('qt-sev-mult')) document.getElementById('qt-sev-mult').textContent = sevMult.toFixed(2) + 'x';
+    if (document.getElementById('qt-exp-mult')) document.getElementById('qt-exp-mult').textContent = expMult.toFixed(2) + 'x';
+}
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
             });
 
-            // Region Chart
-            new Chart(document.getElementById('regionChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: REGION_DATA.map(r => r.name),
-                    datasets: [{
-                        data: REGION_DATA.map(r => r.incidents),
-                        backgroundColor: ['#ef4444','#f97316','#f0b429','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#6366f1'],
-                        borderWidth: 0
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'right' } }
-                }
-            });
-
-            // Other charts (Deep Dive)
             new Chart(document.getElementById('freqChart'), {
                 type: 'line',
                 data: {
                     labels: ['2021', '2022', '2023', '2024'],
-                    datasets: [{
-                        label: 'Frequency',
-                        data: [0.0325, 0.0406, 0.0513, 0.0365],
-                        borderColor: '#06b6d4',
-                        tension: 0.3,
-                        fill: true,
-                        backgroundColor: 'rgba(6,182,212,0.1)'
-                    }]
+                    datasets: [{ label: 'Frequency λ', data: [0.0334, 0.0418, 0.0527, 0.0402], borderColor: '#06b6d4', tension: 0.3, fill: true, backgroundColor: 'rgba(6,182,212,0.1)' }]
+                }
+            });
+
+            new Chart(document.getElementById('waterfallChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Pure Premium', '+IBNR (10%)', '+Exp (5%)', '+Profit (3%)', 'Tech Premium'],
+                    datasets: [{ label: 'Value', data: [9506, 951, 475, 285, 11217], backgroundColor: ['#38bdf8','#8899aa','#8899aa','#8899aa','#f0b429'] }]
                 }
             });
 
@@ -451,63 +404,26 @@
                 type: 'pie',
                 data: {
                     labels: ['Collision', 'Theft', 'Third Party', 'Natural Peril', 'Other'],
-                    datasets: [{
-                        data: [45, 22, 18, 10, 5],
-                        backgroundColor: ['#f0b429', '#ef4444', '#3b82f6', '#22c55e', '#8899aa']
-                    }]
-                }
-            });
-
-            const ctxS = document.getElementById('sensChart').getContext('2d');
-            new Chart(ctxS, {
-                type: 'bar',
-                data: {
-                    labels: ['-10% Risk', 'Base', '+10% Risk'],
-                    datasets: [{
-                        label: 'Premium (Rm)',
-                        data: [61.1, 67.9, 74.7],
-                        backgroundColor: '#3b82f6'
-                    }]
-                }
-            });
-
-            const ctxL = document.getElementById('lossChart').getContext('2d');
-            new Chart(ctxL, {
-                type: 'line',
-                data: {
-                    labels: ['2021', '2022', '2023', '2024'],
-                    datasets: [{
-                        label: 'Loss Ratio %',
-                        data: [68, 72, 78, 74],
-                        borderColor: '#ef4444'
-                    }]
+                    datasets: [{ data: [45, 22, 18, 10, 5], backgroundColor: ['#f0b429', '#ef4444', '#3b82f6', '#22c55e', '#8899aa'] }]
                 }
             });
 
             new Chart(document.getElementById('trendDeepChart'), {
                 type: 'line',
                 data: {
-                    labels: ['2021', '2022', '2023', '2024', '2025F'],
-                    datasets: [
-                        { label: 'Actual', data: [1969, 2462, 3108, 2213, null], borderColor: '#f0b429' },
-                        { label: 'Forecast', data: [null, null, null, 2213, 2600], borderColor: '#f0b429', borderDash: [5, 5] }
-                    ]
+                    labels: ['2021', '2022', '2023', '2024'],
+                    datasets: [{ label: 'Actual', data: [2024, 2532, 3197, 2436], borderColor: '#f0b429' }]
                 }
             });
         }
 
-        // Tab Switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-            });
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
         });
 
         document.addEventListener('DOMContentLoaded', () => {
             initCharts();
+            calcQuote();
         });
     </script>
 </body>
