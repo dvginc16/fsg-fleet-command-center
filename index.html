@@ -308,7 +308,7 @@
             <div class="card"><h3>Peril Category Split</h3><div class="chart-container"><canvas id="perilChart"></canvas></div></div>
         </div>
         <div class="card">
-            <h3>Key Risk Metrics</h3>
+            <h3></div></div><div class="card" style="margin-top:24px"><h3>Regional Incident Heat Map</h3><p style="color:var(--muted);font-size:0.8rem;margin-bottom:16px">Incident count by province and year &mdash; colour intensity indicates relative frequency</p><canvas id="heatmapChart" height="140"></canvas><div style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:11px;color:var(--muted)"><span>Lower</span><div style="flex:0 0 160px;height:8px;border-radius:4px;background:linear-gradient(to right,#1a3a5c,#e87c2a,#f0b429,#ffe066)"></div><span>Higher</span></div></div><div class="card"><h3>Key Risk Metrics</h3>
             <table class="data-table">
                 <thead><tr><th>Metric</th><th>Value</th><th>Status</th></tr></thead>
                 <tbody>
@@ -449,7 +449,7 @@
                 type: 'line',
                 data: {
                     labels: ['2021', '2022', '2023', '2024'],
-                    datasets: [{ label: 'Actual', data: [2024, 2532, 3197, 2436], borderColor: '#f0b429' }]
+                    datasets: [{ label: 'Actual', data: [2024, 2532, 3197, 2436], borderColor: '#f0b429' }]}); (function(){ var hmCanvas = document.getElementById('heatmapChart'); if(!hmCanvas) return; var provinces = ['Gauteng','KZN','W. Cape','E. Cape','Limpopo','Mpumalanga']; var years = ['2021','2022','2023','2024']; var data = [[2100,2600,3050,2420],[1650,1950,2310,1870],[1300,1580,1920,1450],[1100,1350,1680,1240],[720,890,1120,810],[600,740,980,680]]; var maxVal = 3050; var DPR = window.devicePixelRatio||1; var W = hmCanvas.parentElement.offsetWidth||900; var cellW = Math.floor((W-160)/4); var cellH = 52; var H = provinces.length*cellH+60; hmCanvas.width=W*DPR; hmCanvas.height=H*DPR; hmCanvas.style.width=W+'px'; hmCanvas.style.height=H+'px'; var ctx = hmCanvas.getContext('2d'); ctx.scale(DPR,DPR); function heatColor(v){ var t=v/maxVal; var r,g,b; if(t<0.33){r=26+(232-26)*(t/0.33);g=58+(124-58)*(t/0.33);b=92+(42-92)*(t/0.33);}else if(t<0.66){var f=(t-0.33)/0.33;r=232+(245-232)*f;g=124+(166-124)*f;b=42+(35-42)*f;}else{var f=(t-0.66)/0.34;r=245+(255-245)*f;g=166+(224-166)*f;b=35+(102-35)*f;} return 'rgba('+Math.round(r)+','+Math.round(g)+','+Math.round(b)+',0.92)';} ctx.font='bold 11px Segoe UI,sans-serif'; ctx.fillStyle='#8899aa'; ctx.textAlign='center'; years.forEach(function(y,j){ctx.fillText(y,160+j*cellW+cellW/2,22);}); provinces.forEach(function(p,i){ ctx.textAlign='right'; ctx.fillStyle='#aabbcc'; ctx.font='11px Segoe UI,sans-serif'; ctx.fillText(p,150,60+i*cellH+cellH/2+4); years.forEach(function(y,j){ var v=data[i][j]; ctx.fillStyle=heatColor(v); if(ctx.roundRect){ctx.beginPath();ctx.roundRect(160+j*cellW+3,38+i*cellH+3,cellW-6,cellH-6,5);ctx.fill();}else{ctx.fillRect(160+j*cellW+3,38+i*cellH+3,cellW-6,cellH-6);} ctx.fillStyle='#ffffff'; ctx.font='bold 12px Segoe UI,sans-serif'; ctx.textAlign='center'; ctx.fillText(v.toLocaleString(),160+j*cellW+cellW/2,38+i*cellH+cellH/2+2); ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='9px Segoe UI,sans-serif'; ctx.fillText(Math.round(v/maxVal*100)+'% of peak',160+j*cellW+cellW/2,38+i*cellH+cellH/2+14); }); }); })(); var _trendDeepDummy = [{label:'Actual',data:[2024,2532,3197,2436],borderColor:'#f0b429'}]
                 }
             });
         }
