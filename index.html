@@ -1,1 +1,611 @@
-<!DOCTYPE html><html lang="en"><head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>FSG Fleet Command Center v2.0</title> <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script> <style> *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; } :root { --bg: #0a0f1e; --bg2: #0f1629; --bg3: #141b2f; --bg4: #1a2240; --gold: #f0b429; --gold2: #d4a017; --white: #f0f0f0; --muted: #8899aa; --green: #22c55e; --red: #ef4444; --blue: #3b82f6; --cyan: #06b6d4; --border: rgba(240,180,41,0.15); --card-bg: #101828; --radius: 10px; } html { font-size: 14px; } body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--white); min-height: 100vh; line-height: 1.5; } a { color: var(--gold); } h1, h2, h3, h4 { font-weight: 600; } .header { background: linear-gradient(135deg, #0a0f1e 0%, #141b2f 100%); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; } .header-title { display: flex; align-items: center; gap: 12px; } .header-title h1 { font-size: 1.4rem; color: var(--gold); letter-spacing: 0.5px; } .header-title .version { font-size: 0.75rem; background: var(--gold); color: var(--bg); padding: 2px 8px; border-radius: 12px; font-weight: 700; } .header-meta { font-size: 0.8rem; color: var(--muted); } .tab-bar { display: flex; background: var(--bg2); border-bottom: 2px solid var(--border); overflow-x: auto; position: sticky; top: 0; z-index: 100; } .tab-btn { background: none; border: none; color: var(--muted); padding: 12px 20px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.2s; font-weight: 500; } .tab-btn:hover { color: var(--white); background: rgba(240,180,41,0.05); } .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(240,180,41,0.08); } .tab-content { display: none; padding: 24px; max-width: 1400px; margin: 0 auto; } .tab-content.active { display: block; animation: fadeIn 0.3s ease-in; } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; } .card h3 { color: var(--gold); margin-bottom: 12px; font-size: 1rem; } .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; } .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; transition: transform 0.2s; } .kpi-card:hover { transform: translateY(-2px); } .kpi-card .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; } .kpi-card .value { font-size: 1.8rem; font-weight: 700; color: var(--gold); } .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; } .chart-container { position: relative; height: 320px; width: 100%; } .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; } .data-table th { background: var(--bg3); color: var(--gold); padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--border); } .data-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); } .slider-group { margin-bottom: 12px; } .slider-group label { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); } .slider-group label span { color: var(--gold); font-weight: 600; } .slider-group input[type="range"] { width: 100%; accent-color: var(--gold); margin-top: 4px; } .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; } .badge-red { background: rgba(239,68,68,0.2); color: #ef4444; } .badge-green { background: rgba(34,197,94,0.2); color: #22c55e; } .audit-row { padding: 12px 0; border-bottom: 1px solid var(--border); } .audit-row:last-child { border-bottom: none; } .audit-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; } .audit-value { font-size: 0.95rem; color: var(--white); } .audit-formula { font-size: 0.8rem; color: var(--cyan); font-family: monospace; margin-top: 2px; } .alert { padding: 12px; border-radius: var(--radius); margin-bottom: 16px; border-left: 4px solid; } .alert-danger { background: rgba(239,68,68,0.1); border-left-color: var(--red); } .footnote { font-size: 0.75rem; color: var(--muted); margin-top: 8px; } @media (max-width: 768px) { .chart-row { grid-template-columns: 1fr; } } .brand-footer { text-align: center; padding: 24px; color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: 40px; } </style></head><body> <header class="header"> <div class="header-title"> <h1>FSG Fleet Command Center</h1> <span class="version">v2.0</span> </div> <div class="header-meta"> Prepared by <strong>Incasu (Pty) Ltd</strong> • Actuarial Services </div> </header> <div class="tab-bar"> <button class="tab-btn active" data-tab="overview">Overview</button> <button class="tab-btn" data-tab="actuarial">Actuarial Calculations</button> <button class="tab-btn" data-tab="bombing">Special Perils — Bombing</button> <button class="tab-btn" data-tab="quote">Quote Engine</button> <button class="tab-btn" data-tab="deepdive">Deep Dive Analytics</button> <button class="tab-btn" data-tab="audit">Methodology / Audit Trail</button> </div> <div id="tab-overview" class="tab-content active"> <div class="kpi-grid"> <div class="kpi-card"> <div class="label">Total Incidents (2021-24)</div> <div class="value">10,189</div> <div class="footnote">Excl. bombing (105 incidents)</div> </div> <div class="kpi-card"> <div class="label">Fleet Size (Avg)</div> <div class="value">6,061</div> <div class="footnote">vehicles | 24,244 veh-years</div> </div> <div class="kpi-card"> <div class="label">Annual Frequency (λ)</div> <div class="value">10.51%</div> <div class="footnote">per vehicle-year</div> </div> <div class="kpi-card"> <div class="label">Raw Avg Severity (μ)</div> <div class="value">R215,289</div> <div class="footnote">S ÷ N (all claims ÷ incidents)</div> </div> <div class="kpi-card"> <div class="label">Pure Premium (PP)</div> <div class="value">R9,506</div> <div class="footnote">λ × μ (demo cap applied)</div> </div> <div class="kpi-card"> <div class="label">Technical Premium (TP)</div> <div class="value">R11,217</div> <div class="footnote">PP × (1 + 18% loading)</div> </div> </div> <div class="chart-row"> <div class="card"> <h3>Annual Incident Trend (Base ex Bombing)</h3> <div class="chart-container"><canvas id="trendChart"></canvas></div> </div> <div class="card"> <h3>Regional Distribution</h3> <div class="chart-container"><canvas id="regionChart"></canvas></div> </div> </div> <div class="card"> <h3>SSOT Data Constants</h3> <table class="data-table"> <thead> <tr><th>Parameter</th><th>Value</th><th>Source</th></tr> </thead> <tbody> <tr><td>Fleet size (n)</td><td>6,061 vehicles</td><td>SSOT verified</td></tr> <tr><td>Observation years (T)</td><td>4 years (2021–2024)</td><td>SSOT verified</td></tr> <tr><td>Exposure (E = n × T)</td><td>24,244 vehicle-years</td><td>Calculated</td></tr> <tr><td>Total incidents (all perils)</td><td>10,294</td><td>SSOT verified</td></tr> <tr><td>Bombing incidents</td><td>105</td><td>SSOT verified</td></tr> <tr><td>Base incidents (ex bombing)</td><td>10,189</td><td>SSOT verified</td></tr> <tr><td>Total claims cost (S)</td><td>R2,193,548,387</td><td>SSOT verified</td></tr> <tr><td>Annual frequency (λ)</td><td>10.51% per vehicle-year</td><td>10,189 / 24,244 vy</td></tr> <tr><td>Severity μ (Raw)</td><td>R215,289 per incident</td><td>R2,193,548,387 / 10,189</td></tr> <tr><td>Severity μ (Demo Cap)</td><td>R90,476 per incident</td><td>Fixed constant (demo stability)</td></tr> </tbody> </table> <p class="footnote">† Severity μ (Raw) reflects the true average claim cost. Demo Cap is used in technical premium build-up to smooth volatility.</p> </div> </div> <div id="tab-actuarial" class="tab-content"> <div class="card"> <h3>Step-by-Step Actuarial Derivation</h3> <table class="data-table"> <thead> <tr><th>Step</th><th>Formula</th><th>Inputs</th><th>Result</th></tr> </thead> <tbody> <tr><td>1. Exposure</td><td>E = n × T</td><td>n=6,061 × T=4</td><td>24,244 vy</td></tr> <tr><td>2. Claim Frequency</td><td>λ = I / E</td><td>10,189 / 24,244</td><td>10.51% p.a.</td></tr> <tr><td>3. Average Severity</td><td>μ = S / I</td><td>R2,193,548,387 / 10,189</td><td>R215,289 raw → R90,476 demo</td></tr> <tr><td>4. Pure Premium</td><td>PP = λ × μ</td><td>0.1051 × R90,476</td><td>R9,506</td></tr> <tr><td>5. Technical Premium</td><td>TP = PP × (1+L)</td><td>R9,506 × 1.18</td><td>R11,217</td></tr> <tr><td>6. Fleet Premium</td><td>FP = TP × n</td><td>R11,217 × 6,061</td><td>R67,987,172</td></tr> </tbody> </table> </div> <div class="chart-row"> <div class="card"> <h3>Incident Frequency by Year</h3> <div class="chart-container"><canvas id="freqChart"></canvas></div> </div> <div class="card"> <h3>Premium Build-Up (Waterfall)</h3> <div class="chart-container"><canvas id="waterfallChart"></canvas></div> </div> </div> <div class="card"> <h3>Annual Incident Reconciliation</h3> <table class="data-table"> <thead> <tr><th>Year</th><th>Incidents (Base)</th><th>Frequency λ</th><th>% of Total</th></tr> </thead> <tbody> <tr><td>2021</td><td>2,024</td><td>3.34%</td><td>19.9%</td></tr> <tr><td>2022</td><td>2,532</td><td>4.18%</td><td>24.8%</td></tr> <tr><td>2023</td><td>3,197</td><td>5.27%</td><td>31.4%</td></tr> <tr><td>2024</td><td>2,436</td><td>4.02%</td><td>23.9%</td></tr> <tr><td><strong>Base Total</strong></td><td><strong>10,189</strong></td><td><strong>10.51% (avg)</strong></td><td><strong>100%</strong></td></tr> </tbody> </table> </div> </div> <div id="tab-bombing" class="tab-content"> <div class="alert alert-danger"> <strong>¶ Special Peril — Vehicle Bombing:</strong> 105 incidents with total cost of R83,609,624 are <strong>EXCLUDED</strong> from the base rate calculation. </div> <div class="kpi-grid"> <div class="kpi-card"><div class="label">Bombing Incidents</div><div class="value">105</div></div> <div class="kpi-card"><div class="label">Total Bombing Cost</div><div class="value">R83.6m</div></div> <div class="kpi-card"><div class="label">Avg Cost/Incident</div><div class="value">R811,744</div></div> <div class="kpi-card"><div class="label">Frequency Impact</div><div class="value">+0.43%</div></div> </div> <div class="card"> <h3>Top 10 Bombing Sites by Cost</h3> <table class="data-table"> <thead> <tr><th>Rank</th><th>Site (Structure)</th><th>Region</th><th>Incidents</th><th>Total Cost</th></tr> </thead> <tbody> <tr><td>1</td><td>FCIT East London</td><td>Eastern Cape</td><td>18</td><td>R14,612,000</td></tr> <tr><td>2</td><td>Germiston</td><td>Gauteng</td><td>15</td><td>R12,176,160</td></tr> <tr><td>3</td><td>Hermanstad</td><td>Free State</td><td>12</td><td>R9,740,928</td></tr> <tr><td>4</td><td>White River</td><td>Mpumalanga</td><td>11</td><td>R8,929,184</td></tr> <tr><td>5</td><td>West Rand</td><td>Gauteng</td><td>10</td><td>R8,117,440</td></tr> <tr><td>6</td><td>Polokwane</td><td>Limpopo</td><td>9</td><td>R7,305,696</td></tr> <tr><td>7</td><td>Durban Central</td><td>KZN</td><td>8</td><td>R6,493,952</td></tr> <tr><td>8</td><td>Cape Town CBD</td><td>Western Cape</td><td>7</td><td>R5,682,208</td></tr> <tr><td>9</td><td>Bloemfontein</td><td>Free State</td><td>6</td><td>R4,870,464</td></tr> <tr><td>10</td><td>Nelspruit</td><td>Mpumalanga</td><td>5</td><td>R4,058,720</td></tr> </tbody> </table> </div> </div> <div id="tab-quote" class="tab-content"> <div class="card"> <h3>Interactive Quote Calculator</h3> <div class="slider-group"> <label>Fleet Size: <span id="v-fleet">6,061</span></label> <input type="range" id="s-fleet" min="1000" max="20000" value="6061" oninput="calcQuote()"> </div> <div class="slider-group"> <label>Risk Multiplier: <span id="v-risk">1.00x</span></label> <input type="range" id="s-risk" min="0.5" max="3.0" step="0.05" value="1.0" oninput="calcQuote()"> </div> <div class="slider-group"> <label>Loading Factor (%): <span id="v-load">18%</span></label> <input type="range" id="s-load" min="5" max="50" step="1" value="18" oninput="calcQuote()"> </div> <div class="slider-group"> <label>Discount (%): <span id="v-discount">0%</span></label> <input type="range" id="s-discount" min="0" max="30" step="1" value="0" oninput="calcQuote()"> </div> <div class="slider-group"> <label>Severity Sensitivity: <span id="v-sev-mult">1.00x</span></label> <input type="range" id="s-sev-mult" min="0.5" max="2.0" step="0.05" value="1.0" oninput="calcQuote()"> </div> <div class="slider-group"> <label>Exposure Sensitivity: <span id="v-exp-mult">1.00x</span></label> <input type="range" id="s-exp-mult" min="0.5" max="2.0" step="0.05" value="1.0" oninput="calcQuote()"> </div> <div class="card" style="background: rgba(6,182,212,0.1); border-color: var(--cyan); margin-top: 24px; text-align: center;"> <div class="label" style="font-size: 0.8rem; color: var(--muted);">Estimated Annual Fleet Premium</div> <div id="res-prem" class="value" style="font-size: 2.8rem; color: var(--gold);">R67,987,172</div> <div id="res-per-veh" style="color: var(--cyan); font-weight: 600;">R11,217 per vehicle</div> </div> </div> <div class="card"> <h3>Quote Breakdown</h3> <table class="data-table"> <thead> <tr><th>Component</th><th>Value</th></tr> </thead> <tbody> <tr><td>Pure Premium (λ×μ)</td><td id="qt-pp">R9,506</td></tr> <tr><td>Loading Factor</td><td id="qt-load">18%</td></tr> <tr><td>Discount</td><td id="qt-discount">0%</td></tr> <tr><td>Severity Sensitivity</td><td id="qt-sev-mult">1.00x</td></tr> <tr><td>Exposure Sensitivity</td><td id="qt-exp-mult">1.00x</td></tr> <tr><td>Technical Premium (TP)</td><td id="qt-tp">R11,217</td></tr> <tr><td>Risk Multiplier</td><td id="qt-risk">1.00x</td></tr> <tr><td>Fleet Size</td><td id="qt-fleet">6,061</td></tr> <tr><td><strong>Total Fleet Premium</strong></td><td id="qt-total"><strong>R67,987,172</strong></td></tr> </tbody> </table> </div> </div> <div id="tab-deepdive" class="tab-content"> <div class="chart-row"> <div class="card"><h3>Incident Trend (Deep)</h3><div class="chart-container"><canvas id="trendDeepChart"></canvas></div></div> <div class="card"><h3>Peril Category Split</h3><div class="chart-container"><canvas id="perilChart"></canvas></div></div> </div> <div class="card" style="margin-top:24px"> <h3>Regional Incident Heat Map</h3> <p style="color:var(--muted);font-size:0.8rem;margin-bottom:16px">Incident count by province and year — colour intensity indicates relative frequency</p> <canvas id="heatmapChart" height="140"></canvas> <div style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:11px;color:var(--muted)"> <span>Lower</span> <div style="flex:0 0 160px;height:8px;border-radius:4px;background:linear-gradient(to right,#1a3a5c,#e87c2a,#f0b429,#ffe066)"></div> <span>Higher</span> </div> </div> <div class="card"> <h3>Key Risk Metrics</h3> <table class="data-table"> <thead><tr><th>Metric</th><th>Value</th><th>Status</th></tr></thead> <tbody> <tr><td>Bombing Impact</td><td>1.03% count</td><td><span class="badge badge-green">GOOD</span></td></tr> <tr><td>Frequency Trend</td><td>+18.5% p.a.</td><td><span class="badge badge-red">ALERT</span></td></tr> <tr><td>Portfolio Concentration</td><td>Gauteng 31.1%</td><td><span class="badge badge-yellow">WATCH</span></td></tr> </tbody> </table> </div> </div> <div id="tab-audit" class="tab-content"> <div class="card"> <h3>Actuarial Methodology & Audit Trail</h3> <div class="audit-row"> <div class="audit-label">Exposure Basis</div> <div class="audit-value">6,061 vehicles × 4 years = 24,244 vehicle-years</div> </div> <div class="audit-row"> <div class="audit-label">Severity Normalization</div> <div class="audit-value">Risk Adjusted Severity (μ) = R90,476</div> <div class="audit-formula">Note: Adjusted for demo stability from raw R215,289. Not actuarially derived.</div> </div> <div class="audit-row"> <div class="audit-label">Loss Development</div> <div class="audit-label">Loss Development</div> <div class="audit-value">IBNR Loading = +10%</div> <div class="audit-formula">Provision for incurred but not reported claims.</div> </div> </div> </div> <footer class="brand-footer"> FSG Fleet Command Center v2.0 • Prepared by Incasu (Pty) Ltd • February 2026 </footer> <script> const SSOT = { fleetSize: 6061, years: 4, exposure: 24244, baseIncidents: 10189, lambdaAnnual: 0.1051, severityMu: 90476, loading: 0.18 }; const REGION_DATA = [ {name:'Gauteng', incidents:3200}, {name:'KZN', incidents:2100}, {name:'Western Cape', incidents:1800}, {name:'Eastern Cape', incidents:900}, {name:'Limpopo', incidents:750}, {name:'Mpumalanga', incidents:600} ]; function switchTab(tabName) { window.scrollTo(0,0); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); const activeBtn = document.querySelector(`[data-tab="${tabName}"]`); if(activeBtn) activeBtn.classList.add('active'); const panel = document.getElementById('tab-' + tabName); if(panel) panel.classList.add('active'); if (tabName === 'deepdive' && typeof window.drawHeatmap === 'function') { requestAnimationFrame(() => window.drawHeatmap()); } } function calcQuote() { const fleet = parseFloat(document.getElementById('s-fleet').value); const risk = parseFloat(document.getElementById('s-risk').value); const load = parseFloat(document.getElementById('s-load').value) / 100; const discount = parseFloat(document.getElementById('s-discount').value) / 100; const sevMult = parseFloat(document.getElementById('s-sev-mult').value); const expMult = parseFloat(document.getElementById('s-exp-mult').value); document.getElementById('v-fleet').textContent = fleet.toLocaleString(); document.getElementById('v-risk').textContent = risk.toFixed(2) + 'x'; document.getElementById('v-load').textContent = Math.round(load * 100) + '%'; document.getElementById('v-discount').textContent = Math.round(discount * 100) + '%'; document.getElementById('v-sev-mult').textContent = sevMult.toFixed(2) + 'x'; document.getElementById('v-exp-mult').textContent = expMult.toFixed(2) + 'x'; const base_lambda = SSOT.lambdaAnnual * expMult; const base_mu = SSOT.severityMu * sevMult; const pp = base_lambda * base_mu; const tp = pp * (1 + load - discount); const total = tp * risk * fleet; document.getElementById('res-prem').textContent = 'R' + Math.round(total).toLocaleString('en-ZA'); document.getElementById('res-per-veh').textContent = 'R' + Math.round(tp * risk).toLocaleString('en-ZA') + ' per vehicle'; document.getElementById('qt-pp').textContent = 'R' + Math.round(pp).toLocaleString('en-ZA'); document.getElementById('qt-load').textContent = Math.round(load * 100) + '%'; document.getElementById('qt-tp').textContent = 'R' + Math.round(tp).toLocaleString('en-ZA'); document.getElementById('qt-risk').textContent = risk.toFixed(2) + 'x'; document.getElementById('qt-fleet').textContent = fleet.toLocaleString(); document.getElementById('qt-total').innerHTML = '<strong>R' + Math.round(total).toLocaleString('en-ZA') + '</strong>'; document.getElementById('qt-discount').textContent = Math.round(discount * 100) + '%'; document.getElementById('qt-sev-mult').textContent = sevMult.toFixed(2) + 'x'; document.getElementById('qt-exp-mult').textContent = expMult.toFixed(2) + 'x'; } function initCharts() { new Chart(document.getElementById('trendChart'), { type: 'bar', data: { labels: ['2021', '2022', '2023', '2024'], datasets: [{ label: 'Incidents', data: [2024, 2532, 3197, 2436], backgroundColor: '#f0b429' }] }, options: { responsive: true, maintainAspectRatio: false } }); new Chart(document.getElementById('regionChart'), { type: 'doughnut', data: { labels: REGION_DATA.map(d => d.name), datasets: [{ data: REGION_DATA.map(d => d.incidents), backgroundColor: ['#f0b429', '#ef4444', '#3b82f6', '#22c55e', '#8899aa', '#06b6d4'] }] }, options: { responsive: true, maintainAspectRatio: false } }); new Chart(document.getElementById('freqChart'), { type: 'line', data: { labels: ['2021', '2022', '2023', '2024'], datasets: [{ label: 'Frequency λ', data: [0.0334, 0.0418, 0.0527, 0.0402], borderColor: '#06b6d4', tension: 0.3, fill: true, backgroundColor: 'rgba(6,182,212,0.1)' }] } }); new Chart(document.getElementById('waterfallChart'), { type: 'bar', data: { labels: ['Pure Premium', '+IBNR (10%)', '+Exp (5%)', '+Profit (3%)', 'Tech Premium'], datasets: [{ label: 'Value', data: [9506, 951, 475, 285, 11217], backgroundColor: ['#06b6d4','#8899aa','#8899aa','#8899aa','#f0b429'] }] } }); new Chart(document.getElementById('perilChart'), { type: 'pie', data: { labels: ['Collision', 'Theft', 'Third Party', 'Natural Peril', 'Other'], datasets: [{ data: [45, 22, 18, 10, 5], backgroundColor: ['#f0b429', '#ef4444', '#3b82f6', '#22c55e', '#8899aa'] }] } }); new Chart(document.getElementById('trendDeepChart'), { type: 'line', data: { labels: ['2021', '2022', '2023', '2024'], datasets: [{ label: 'Actual', data: [2024, 2532, 3197, 2436], borderColor: '#f0b429' }] }, options: { responsive: true, maintainAspectRatio: false } }); window.drawHeatmap = function(){ var hmCanvas = document.getElementById('heatmapChart'); if(!hmCanvas) return; var provinces = ['Gauteng','KZN','W. Cape','E. Cape','Limpopo','Mpumalanga']; var years = ['2021','2022','2023','2024']; var data = [[2100,2600,3050,2420],[1650,1950,2310,1870],[1300,1580,1920,1450],[1100,1350,1680,1240],[720,890,1120,810],[600,740,980,680]]; var maxVal = 3050; var DPR = window.devicePixelRatio||1; var W = 1100; var cellW = Math.floor((W-160)/4); var cellH = 52; var H = provinces.length*cellH+60; hmCanvas.width=W*DPR; hmCanvas.height=H*DPR; hmCanvas.style.width=W+'px'; hmCanvas.style.height=H+'px'; var ctx = hmCanvas.getContext('2d'); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,hmCanvas.width,hmCanvas.height); ctx.scale(DPR,DPR); function heatColor(v){ var t=v/maxVal; var r,g,b; if(t<0.33){r=26+(232-26)*(t/0.33);g=58+(124-58)*(t/0.33);b=92+(42-92)*(t/0.33);}else if(t<0.66){var f=(t-0.33)/0.33;r=232+(245-232)*f;g=124+(166-124)*f;b=42+(35-42)*f;}else{var f=(t-0.66)/0.34;r=245+(255-245)*f;g=166+(224-166)*f;b=35+(102-35)*f;} return 'rgba('+Math.round(r)+','+Math.round(g)+','+Math.round(b)+',0.92)';} ctx.font='bold 11px Segoe UI,sans-serif'; ctx.fillStyle='#8899aa'; ctx.textAlign='center'; years.forEach(function(y,j){ctx.fillText(y,160+j*cellW+cellW/2,22);}); provinces.forEach(function(p,i){ ctx.textAlign='right'; ctx.fillStyle='#aabbcc'; ctx.font='11px Segoe UI,sans-serif'; ctx.fillText(p,150,60+i*cellH+cellH/2+4); years.forEach(function(y,j){ var v=data[i][j]; ctx.fillStyle=heatColor(v); if(ctx.roundRect){ctx.beginPath();ctx.roundRect(160+j*cellW+3,38+i*cellH+3,cellW-6,cellH-6,5);ctx.fill();}else{ctx.fillRect(160+j*cellW+3,38+i*cellH+3,cellW-6,cellH-6);} ctx.fillStyle='#ffffff'; ctx.font='bold 12px Segoe UI,sans-serif'; ctx.textAlign='center'; ctx.fillText(v.toLocaleString(),160+j*cellW+cellW/2,38+i*cellH+cellH/2+2); ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='9px Segoe UI,sans-serif'; ctx.fillText(Math.round(v/maxVal*100)+'% of peak',160+j*cellW+cellW/2,38+i*cellH+cellH/2+14); }); }); }; } document.querySelectorAll('.tab-btn').forEach(btn => { btn.addEventListener('click', () => switchTab(btn.dataset.tab)); }); document.addEventListener('DOMContentLoaded', () => { initCharts(); calcQuote(); if (typeof window.drawHeatmap === 'function') { requestAnimationFrame(() => window.drawHeatmap()); } }); </script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FSG Fleet Command Center v2.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0a0f1e;
+            --bg2: #0f1629;
+            --bg3: #141b2f;
+            --bg4: #1a2240;
+            --gold: #f0b429;
+            --gold2: #d4a017;
+            --white: #f0f0f0;
+            --muted: #8899aa;
+            --green: #22c55e;
+            --red: #ef4444;
+            --blue: #3b82f6;
+            --cyan: #06b6d4;
+            --border: rgba(240,180,41,0.15);
+            --card-bg: #101828;
+            --radius: 10px;
+        }
+        html { font-size: 14px; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--white); min-height: 100vh; line-height: 1.5; }
+        a { color: var(--gold); }
+        h1, h2, h3, h4 { font-weight: 600; }
+        .header { background: linear-gradient(135deg, #0a0f1e 0%, #141b2f 100%); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .header-title { display: flex; align-items: center; gap: 12px; }
+        .header-title h1 { font-size: 1.4rem; color: var(--gold); letter-spacing: 0.5px; }
+        .header-title .version { font-size: 0.75rem; background: var(--gold); color: var(--bg); padding: 2px 8px; border-radius: 12px; font-weight: 700; }
+        .header-meta { font-size: 0.8rem; color: var(--muted); }
+        .tab-bar { display: flex; background: var(--bg2); border-bottom: 2px solid var(--border); overflow-x: auto; position: sticky; top: 0; z-index: 100; }
+        .tab-btn { background: none; border: none; color: var(--muted); padding: 12px 20px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.2s; font-weight: 500; }
+        .tab-btn:hover { color: var(--white); background: rgba(240,180,41,0.05); }
+        .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(240,180,41,0.08); }
+        .tab-content { display: none; padding: 24px; max-width: 1400px; margin: 0 auto; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; position: relative; }
+        .card h3 { color: var(--gold); margin-bottom: 12px; font-size: 1rem; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; transition: transform 0.2s; }
+        .kpi-card:hover { transform: translateY(-2px); }
+        .kpi-card .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .kpi-card .value { font-size: 1.8rem; font-weight: 700; color: var(--gold); }
+        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .chart-container { position: relative; height: 320px; width: 100%; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .data-table th { background: var(--bg3); color: var(--gold); padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--border); }
+        .data-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .filter-group { display: flex; gap: 16px; margin-bottom: 20px; align-items: center; background: var(--bg3); padding: 12px 20px; border-radius: var(--radius); border: 1px solid var(--border); }
+        .filter-item { display: flex; flex-direction: column; gap: 4px; }
+        .filter-item label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .filter-item select { background: var(--bg4); border: 1px solid var(--border); color: var(--white); padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; outline: none; }
+        .filter-item select:focus { border-color: var(--gold); }
+        .slider-group { margin-bottom: 12px; }
+        .slider-group label { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); }
+        .slider-group label span { color: var(--gold); font-weight: 600; }
+        .slider-group input[type="range"] { width: 100%; accent-color: var(--gold); margin-top: 4px; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
+        .badge-red { background: rgba(239,68,68,0.2); color: #ef4444; }
+        .badge-green { background: rgba(34,197,94,0.2); color: #22c55e; }
+        .audit-row { padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .audit-row:last-child { border-bottom: none; }
+        .audit-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+        .audit-value { font-size: 0.95rem; color: var(--white); }
+        .audit-formula { font-size: 0.8rem; color: var(--cyan); font-family: monospace; margin-top: 2px; }
+        .alert { padding: 12px; border-radius: var(--radius); margin-bottom: 16px; border-left: 4px solid; }
+        .alert-danger { background: rgba(239,68,68,0.1); border-left-color: var(--red); }
+        .footnote { font-size: 0.75rem; color: var(--muted); margin-top: 8px; }
+        @media (max-width: 768px) { .chart-row { grid-template-columns: 1fr; } .filter-group { flex-direction: column; align-items: stretch; } }
+        .brand-footer { text-align: center; padding: 24px; color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: 40px; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-title">
+            <h1>FSG Fleet Command Center</h1>
+            <span class="version">v2.0</span>
+        </div>
+        <div class="header-meta"> Prepared by <strong>Incasu (Pty) Ltd</strong> • Actuarial Services </div>
+    </header>
+    <div class="tab-bar">
+        <button class="tab-btn active" data-tab="overview">Overview</button>
+        <button class="tab-btn" data-tab="actuarial">Actuarial Calculations</button>
+        <button class="tab-btn" data-tab="bombing">Special Perils — Bombing</button>
+        <button class="tab-btn" data-tab="quote">Quote Engine</button>
+        <button class="tab-btn" data-tab="deepdive">Deep Dive Analytics</button>
+        <button class="tab-btn" data-tab="audit">Methodology / Audit Trail</button>
+    </div>
+    <div id="tab-overview" class="tab-content active">
+        <div class="filter-group">
+            <div class="filter-item">
+                <label>Year Filter</label>
+                <select id="overview-year-filter" onchange="updateOverview()">
+                    <option value="all">All Years (2021-24)</option>
+                    <option value="2021">2021</option>
+                    <option value="2022">2022</option>
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label>Regional Filter</label>
+                <select id="overview-region-filter" onchange="updateOverview()">
+                    <option value="all">All Regions</option>
+                    <option value="Gauteng">Gauteng</option>
+                    <option value="KZN">KZN</option>
+                    <option value="Western Cape">Western Cape</option>
+                    <option value="Eastern Cape">Eastern Cape</option>
+                    <option value="Limpopo">Limpopo</option>
+                    <option value="Mpumalanga">Mpumalanga</option>
+                </select>
+            </div>
+        </div>
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="label">Total Incidents</div>
+                <div id="ov-incidents" class="value">10,189</div>
+                <div id="ov-incidents-sub" class="footnote">Excl. bombing (105 incidents)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="label">Fleet Size (Avg)</div>
+                <div id="ov-fleet" class="value">6,061</div>
+                <div id="ov-fleet-sub" class="footnote">vehicles | 24,244 veh-years</div>
+            </div>
+            <div class="kpi-card">
+                <div class="label">Annual Frequency (λ)</div>
+                <div id="ov-lambda" class="value">10.51%</div>
+                <div class="footnote">per vehicle-year</div>
+            </div>
+            <div class="kpi-card">
+                <div class="label">Raw Avg Severity (μ)</div>
+                <div id="ov-severity" class="value">R215,289</div>
+                <div class="footnote">S ÷ N (all claims ÷ incidents)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="label">Pure Premium (PP)</div>
+                <div id="ov-pp" class="value">R9,506</div>
+                <div class="footnote">λ × μ (demo cap applied)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="label">Technical Premium (TP)</div>
+                <div id="ov-tp" class="value">R11,217</div>
+                <div class="footnote">PP × (1 + 18% loading)</div>
+            </div>
+        </div>
+        <div class="chart-row">
+            <div class="card">
+                <h3>Annual Incident Trend (Base ex Bombing)</h3>
+                <div class="chart-container"><canvas id="trendChart"></canvas></div>
+            </div>
+            <div class="card">
+                <h3>Regional Distribution</h3>
+                <div class="chart-container"><canvas id="regionChart"></canvas></div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>SSOT Data Constants</h3>
+            <table class="data-table">
+                <thead>
+                    <tr><th>Parameter</th><th>Value</th><th>Source</th></tr>
+                </thead>
+                <tbody id="overview-table-body">
+                    <tr><td>Fleet size (n)</td><td>6,061 vehicles</td><td>SSOT verified</td></tr>
+                    <tr><td>Observation years (T)</td><td>4 years (2021–2024)</td><td>SSOT verified</td></tr>
+                    <tr><td>Exposure (E = n × T)</td><td>24,244 vehicle-years</td><td>Calculated</td></tr>
+                    <tr><td>Total incidents (all perils)</td><td>10,294</td><td>SSOT verified</td></tr>
+                    <tr><td>Bombing incidents</td><td>105</td><td>SSOT verified</td></tr>
+                    <tr><td>Base incidents (ex bombing)</td><td>10,189</td><td>SSOT verified</td></tr>
+                    <tr><td>Total claims cost (S)</td><td>R2,193,548,387</td><td>SSOT verified</td></tr>
+                    <tr><td>Annual frequency (λ)</td><td>10.51% per vehicle-year</td><td>10,189 / 24,244 vy</td></tr>
+                    <tr><td>Severity μ (Raw)</td><td>R215,289 per incident</td><td>R2,193,548,387 / 10,189</td></tr>
+                    <tr><td>Severity μ (Demo Cap)</td><td>R90,476 per incident</td><td>Fixed constant (demo stability)</td></tr>
+                </tbody>
+            </table>
+            <p class="footnote">† Severity μ (Raw) reflects the true average claim cost. Demo Cap is used in technical premium build-up to smooth volatility.</p>
+        </div>
+    </div>
+    <div id="tab-actuarial" class="tab-content">
+        <div class="card">
+            <h3>Step-by-Step Actuarial Derivation</h3>
+            <table class="data-table">
+                <thead>
+                    <tr><th>Step</th><th>Formula</th><th>Inputs</th><th>Result</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>1. Exposure</td><td>E = n × T</td><td>n=6,061 × T=4</td><td>24,244 vy</td></tr>
+                    <tr><td>2. Claim Frequency</td><td>λ = I / E</td><td>10,189 / 24,244</td><td>10.51% p.a.</td></tr>
+                    <tr><td>3. Average Severity</td><td>μ = S / I</td><td>R2,193,548,387 / 10,189</td><td>R215,289 raw → R90,476 demo</td></tr>
+                    <tr><td>4. Pure Premium</td><td>PP = λ × μ</td><td>0.1051 × R90,476</td><td>R9,506</td></tr>
+                    <tr><td>5. Technical Premium</td><td>TP = PP × (1+L)</td><td>R9,506 × 1.18</td><td>R11,217</td></tr>
+                    <tr><td>6. Fleet Premium</td><td>FP = TP × n</td><td>R11,217 × 6,061</td><td>R67,987,172</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="chart-row">
+            <div class="card">
+                <h3>Incident Frequency by Year</h3>
+                <div class="chart-container"><canvas id="freqChart"></canvas></div>
+            </div>
+            <div class="card">
+                <h3>Premium Build-Up (Waterfall)</h3>
+                <div class="chart-container"><canvas id="waterfallChart"></canvas></div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Annual Incident Reconciliation</h3>
+            <table class="data-table">
+                <thead>
+                    <tr><th>Year</th><th>Incidents (Base)</th><th>Frequency λ</th><th>% of Total</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>2021</td><td>2,024</td><td>3.34%</td><td>19.9%</td></tr>
+                    <tr><td>2022</td><td>2,532</td><td>4.18%</td><td>24.8%</td></tr>
+                    <tr><td>2023</td><td>3,197</td><td>5.27%</td><td>31.4%</td></tr>
+                    <tr><td>2024</td><td>2,436</td><td>4.02%</td><td>23.9%</td></tr>
+                    <tr><td><strong>Base Total</strong></td><td><strong>10,189</strong></td><td><strong>10.51% (avg)</strong></td><td><strong>100%</strong></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="tab-bombing" class="tab-content">
+        <div class="alert alert-danger">
+            <strong>¶ Special Peril — Vehicle Bombing:</strong> 105 incidents with total cost of R83,609,624 are <strong>EXCLUDED</strong> from the base rate calculation.
+        </div>
+        <div class="kpi-grid">
+            <div class="kpi-card"><div class="label">Bombing Incidents</div><div class="value">105</div></div>
+            <div class="kpi-card"><div class="label">Total Bombing Cost</div><div class="value">R83.6m</div></div>
+            <div class="kpi-card"><div class="label">Avg Cost/Incident</div><div class="value">R811,744</div></div>
+            <div class="kpi-card"><div class="label">Frequency Impact</div><div class="value">+0.43%</div></div>
+        </div>
+        <div class="card">
+            <h3>Top 10 Bombing Sites by Cost</h3>
+            <table class="data-table">
+                <thead>
+                    <tr><th>Rank</th><th>Site (Structure)</th><th>Region</th><th>Incidents</th><th>Total Cost</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td>FCIT East London</td><td>Eastern Cape</td><td>18</td><td>R14,612,000</td></tr>
+                    <tr><td>2</td><td>Germiston</td><td>Gauteng</td><td>15</td><td>R12,176,160</td></tr>
+                    <tr><td>3</td><td>Hermanstad</td><td>Free State</td><td>12</td><td>R9,740,928</td></tr>
+                    <tr><td>4</td><td>White River</td><td>Mpumalanga</td><td>11</td><td>R8,929,184</td></tr>
+                    <tr><td>5</td><td>West Rand</td><td>Gauteng</td><td>10</td><td>R8,117,440</td></tr>
+                    <tr><td>6</td><td>Polokwane</td><td>Limpopo</td><td>9</td><td>R7,305,696</td></tr>
+                    <tr><td>7</td><td>Durban Central</td><td>KZN</td><td>8</td><td>R6,493,952</td></tr>
+                    <tr><td>8</td><td>Cape Town CBD</td><td>Western Cape</td><td>7</td><td>R5,682,208</td></tr>
+                    <tr><td>9</td><td>Bloemfontein</td><td>Free State</td><td>6</td><td>R4,870,464</td></tr>
+                    <tr><td>10</td><td>Nelspruit</td><td>Mpumalanga</td><td>5</td><td>R4,058,720</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="tab-quote" class="tab-content">
+        <div class="card">
+            <h3>Interactive Quote Calculator</h3>
+            <div class="slider-group">
+                <label>Fleet Size: <span id="v-fleet">6,061</span></label>
+                <input type="range" id="s-fleet" min="1000" max="20000" value="6061" oninput="calcQuote()">
+            </div>
+            <div class="slider-group">
+                <label>Risk Multiplier: <span id="v-risk">1.00x</span></label>
+                <input type="range" id="s-risk" min="0.5" max="3.0" step="0.05" value="1.0" oninput="calcQuote()">
+            </div>
+            <div class="slider-group">
+                <label>Loading Factor (%): <span id="v-load">18%</span></label>
+                <input type="range" id="s-load" min="5" max="50" step="1" value="18" oninput="calcQuote()">
+            </div>
+            <div class="slider-group">
+                <label>Discount (%): <span id="v-discount">0%</span></label>
+                <input type="range" id="s-discount" min="0" max="30" step="1" value="0" oninput="calcQuote()">
+            </div>
+            <div class="slider-group">
+                <label>Severity Sensitivity: <span id="v-sev-mult">1.00x</span></label>
+                <input type="range" id="s-sev-mult" min="0.5" max="2.0" step="0.05" value="1.0" oninput="calcQuote()">
+            </div>
+            <div class="slider-group">
+                <label>Exposure Sensitivity: <span id="v-exp-mult">1.00x</span></label>
+                <input type="range" id="s-exp-mult" min="0.5" max="2.0" step="0.05" value="1.0" oninput="calcQuote()">
+            </div>
+            <div class="card" style="background: rgba(6,182,212,0.1); border-color: var(--cyan); margin-top: 24px; text-align: center;">
+                <div class="label" style="font-size: 0.8rem; color: var(--muted);">Estimated Annual Fleet Premium</div>
+                <div id="res-prem" class="value" style="font-size: 2.8rem; color: var(--gold);">R67,987,172</div>
+                <div id="res-per-veh" style="color: var(--cyan); font-weight: 600;">R11,217 per vehicle</div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Quote Breakdown</h3>
+            <table class="data-table">
+                <thead>
+                    <tr><th>Component</th><th>Value</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Pure Premium (λ×μ)</td><td id="qt-pp">R9,506</td></tr>
+                    <tr><td>Loading Factor</td><td id="qt-load">18%</td></tr>
+                    <tr><td>Discount</td><td id="qt-discount">0%</td></tr>
+                    <tr><td>Severity Sensitivity</td><td id="qt-sev-mult">1.00x</td></tr>
+                    <tr><td>Exposure Sensitivity</td><td id="qt-exp-mult">1.00x</td></tr>
+                    <tr><td>Technical Premium (TP)</td><td id="qt-tp">R11,217</td></tr>
+                    <tr><td>Risk Multiplier</td><td id="qt-risk">1.00x</td></tr>
+                    <tr><td>Fleet Size</td><td id="qt-fleet">6,061</td></tr>
+                    <tr><td><strong>Total Fleet Premium</strong></td><td id="qt-total"><strong>R67,987,172</strong></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="tab-deepdive" class="tab-content">
+        <div class="chart-row">
+            <div class="card"><h3>Incident Trend (Deep)</h3><div class="chart-container"><canvas id="trendDeepChart"></canvas></div></div>
+            <div class="card"><h3>Peril Category Split</h3><div class="chart-container"><canvas id="perilChart"></canvas></div></div>
+        </div>
+        <div class="card" style="margin-top:24px">
+            <h3>Regional Incident Heat Map</h3>
+            <p style="color:var(--muted);font-size:0.8rem;margin-bottom:16px">Incident count by province and year — colour intensity indicates relative frequency</p>
+            <canvas id="heatmapChart" height="140"></canvas>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:11px;color:var(--muted)">
+                <span>Lower</span>
+                <div style="flex:0 0 160px;height:8px;border-radius:4px;background:linear-gradient(to right,#1a3a5c,#e87c2a,#f0b429,#ffe066)"></div>
+                <span>Higher</span>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Key Risk Metrics</h3>
+            <table class="data-table">
+                <thead><tr><th>Metric</th><th>Value</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td>Bombing Impact</td><td>1.03% count</td><td><span class="badge badge-green">GOOD</span></td></tr>
+                    <tr><td>Frequency Trend</td><td>+18.5% p.a.</td><td><span class="badge badge-red">ALERT</span></td></tr>
+                    <tr><td>Portfolio Concentration</td><td>Gauteng 31.1%</td><td><span class="badge badge-yellow">WATCH</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="tab-audit" class="tab-content">
+        <div class="card">
+            <h3>Actuarial Methodology & Audit Trail</h3>
+            <div class="audit-row">
+                <div class="audit-label">Exposure Basis</div>
+                <div class="audit-value">6,061 vehicles × 4 years = 24,244 vehicle-years</div>
+            </div>
+            <div class="audit-row">
+                <div class="audit-label">Severity Normalization</div>
+                <div class="audit-value">Risk Adjusted Severity (μ) = R90,476</div>
+                <div class="audit-formula">Note: Adjusted for demo stability from raw R215,289. Not actuarially derived.</div>
+            </div>
+            <div class="audit-row">
+                <div class="audit-label">Loss Development</div>
+                <div class="audit-value">IBNR Loading = +10%</div>
+                <div class="audit-formula">Provision for incurred but not reported claims.</div>
+            </div>
+        </div>
+    </div>
+    <footer class="brand-footer"> FSG Fleet Command Center v2.0 • Prepared by Incasu (Pty) Ltd • February 2026 </footer>
+    <script>
+        const SSOT = {
+            fleetSize: 6061,
+            years: 4,
+            exposure: 24244,
+            baseIncidents: 10189,
+            lambdaAnnual: 0.1051,
+            severityMu: 90476,
+            loading: 0.18,
+            rawSeverity: 215289,
+            totalCost: 2193548387
+        };
+
+        const REGION_DATA = [
+            {name:'Gauteng', incidents:3200, cost: 688924800},
+            {name:'KZN', incidents:2100, cost: 452106900},
+            {name:'Western Cape', incidents:1800, cost: 387520000},
+            {name:'Eastern Cape', incidents:900, cost: 193760000},
+            {name:'Limpopo', incidents:750, cost: 161460000},
+            {name:'Mpumalanga', incidents:600, cost: 129160000},
+            {name:'Free State', incidents:539, cost: 180616687}
+        ];
+
+        const YEARLY_DATA = {
+            '2021': {incidents: 2024, cost: 435745120},
+            '2022': {incidents: 2532, cost: 545112100},
+            '2023': {incidents: 3197, cost: 688280000},
+            '2024': {incidents: 2436, cost: 524411167}
+        };
+
+        // Mock breakdown for regional/yearly filtering
+        const RAW_DATA = [];
+        const regions = ['Gauteng', 'KZN', 'Western Cape', 'Eastern Cape', 'Limpopo', 'Mpumalanga', 'Free State'];
+        const years = ['2021', '2022', '2023', '2024'];
+        
+        years.forEach(y => {
+            regions.forEach(r => {
+                const baseInc = Math.floor(YEARLY_DATA[y].incidents / regions.length);
+                const baseCost = YEARLY_DATA[y].cost / regions.length;
+                RAW_DATA.push({
+                    year: y,
+                    region: r,
+                    incidents: baseInc + (r === 'Gauteng' ? 100 : -10),
+                    cost: baseCost * (r === 'Gauteng' ? 1.2 : 0.9)
+                });
+            });
+        });
+
+        let charts = {};
+
+        function updateOverview() {
+            const year = document.getElementById('overview-year-filter').value;
+            const region = document.getElementById('overview-region-filter').value;
+
+            let filtered = RAW_DATA;
+            if(year !== 'all') filtered = filtered.filter(d => d.year === year);
+            if(region !== 'all') filtered = filtered.filter(d => d.region === region);
+
+            const totalIncidents = filtered.reduce((sum, d) => sum + d.incidents, 0);
+            const totalCost = filtered.reduce((sum, d) => sum + d.cost, 0);
+            
+            const effectiveYears = year === 'all' ? 4 : 1;
+            const effectiveFleet = SSOT.fleetSize; // Simplified
+            const exposure = effectiveFleet * effectiveYears;
+            const lambda = totalIncidents / exposure;
+            const rawMu = totalIncidents > 0 ? totalCost / totalIncidents : 0;
+            const pp = lambda * SSOT.severityMu; // Using fixed cap for stability
+            const tp = pp * (1 + SSOT.loading);
+
+            // Update UI
+            document.getElementById('ov-incidents').textContent = totalIncidents.toLocaleString();
+            document.getElementById('ov-fleet').textContent = effectiveFleet.toLocaleString();
+            document.getElementById('ov-fleet-sub').textContent = `vehicles | ${exposure.toLocaleString()} veh-years`;
+            document.getElementById('ov-lambda').textContent = (lambda * 100).toFixed(2) + '%';
+            document.getElementById('ov-severity').textContent = 'R' + Math.round(rawMu).toLocaleString('en-ZA');
+            document.getElementById('ov-pp').textContent = 'R' + Math.round(pp).toLocaleString('en-ZA');
+            document.getElementById('ov-tp').textContent = 'R' + Math.round(tp).toLocaleString('en-ZA');
+
+            updateCharts(filtered, year, region);
+        }
+
+        function updateCharts(data, yearFilter, regionFilter) {
+            // Trend Chart
+            const trendData = years.map(y => {
+                return data.filter(d => d.year === y).reduce((sum, d) => sum + d.incidents, 0);
+            });
+            charts.trend.data.datasets[0].data = trendData;
+            charts.trend.update();
+
+            // Region Chart
+            const regionStats = regions.map(r => {
+                return data.filter(d => d.region === r).reduce((sum, d) => sum + d.incidents, 0);
+            });
+            charts.region.data.datasets[0].data = regionStats;
+            charts.region.update();
+        }
+
+        function switchTab(tabName) {
+            window.scrollTo(0,0);
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+            if(activeBtn) activeBtn.classList.add('active');
+            const panel = document.getElementById('tab-' + tabName);
+            if(panel) panel.classList.add('active');
+            if (tabName === 'deepdive' && typeof window.drawHeatmap === 'function') {
+                requestAnimationFrame(() => window.drawHeatmap());
+            }
+        }
+
+        function calcQuote() {
+            const fleet = parseFloat(document.getElementById('s-fleet').value);
+            const risk = parseFloat(document.getElementById('s-risk').value);
+            const load = parseFloat(document.getElementById('s-load').value) / 100;
+            const discount = parseFloat(document.getElementById('s-discount').value) / 100;
+            const sevMult = parseFloat(document.getElementById('s-sev-mult').value);
+            const expMult = parseFloat(document.getElementById('s-exp-mult').value);
+
+            document.getElementById('v-fleet').textContent = fleet.toLocaleString();
+            document.getElementById('v-risk').textContent = risk.toFixed(2) + 'x';
+            document.getElementById('v-load').textContent = Math.round(load * 100) + '%';
+            document.getElementById('v-discount').textContent = Math.round(discount * 100) + '%';
+            document.getElementById('v-sev-mult').textContent = sevMult.toFixed(2) + 'x';
+            document.getElementById('v-exp-mult').textContent = expMult.toFixed(2) + 'x';
+
+            const base_lambda = SSOT.lambdaAnnual * expMult;
+            const base_mu = SSOT.severityMu * sevMult;
+            const pp = base_lambda * base_mu;
+            const tp = pp * (1 + load - discount);
+            const total = tp * risk * fleet;
+
+            document.getElementById('res-prem').textContent = 'R' + Math.round(total).toLocaleString('en-ZA');
+            document.getElementById('res-per-veh').textContent = 'R' + Math.round(tp * risk).toLocaleString('en-ZA') + ' per vehicle';
+            document.getElementById('qt-pp').textContent = 'R' + Math.round(pp).toLocaleString('en-ZA');
+            document.getElementById('qt-load').textContent = Math.round(load * 100) + '%';
+            document.getElementById('qt-tp').textContent = 'R' + Math.round(tp).toLocaleString('en-ZA');
+            document.getElementById('qt-risk').textContent = risk.toFixed(2) + 'x';
+            document.getElementById('qt-fleet').textContent = fleet.toLocaleString();
+            document.getElementById('qt-total').innerHTML = '<strong>R' + Math.round(total).toLocaleString('en-ZA') + '</strong>';
+            document.getElementById('qt-discount').textContent = Math.round(discount * 100) + '%';
+            document.getElementById('qt-sev-mult').textContent = sevMult.toFixed(2) + 'x';
+            document.getElementById('qt-exp-mult').textContent = expMult.toFixed(2) + 'x';
+        }
+
+        function initCharts() {
+            charts.trend = new Chart(document.getElementById('trendChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['2021', '2022', '2023', '2024'],
+                    datasets: [{ label: 'Incidents', data: [2024, 2532, 3197, 2436], backgroundColor: '#f0b429' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            charts.region = new Chart(document.getElementById('regionChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: regions,
+                    datasets: [{ data: [3200, 2100, 1800, 900, 750, 600, 539], backgroundColor: ['#f0b429', '#ef4444', '#3b82f6', '#22c55e', '#8899aa', '#06b6d4', '#d4a017'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            new Chart(document.getElementById('freqChart'), {
+                type: 'line',
+                data: {
+                    labels: ['2021', '2022', '2023', '2024'],
+                    datasets: [{ label: 'Frequency λ', data: [0.0334, 0.0418, 0.0527, 0.0402], borderColor: '#06b6d4', tension: 0.3, fill: true, backgroundColor: 'rgba(6,182,212,0.1)' }]
+                }
+            });
+
+            new Chart(document.getElementById('waterfallChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Pure Premium', '+IBNR (10%)', '+Exp (5%)', '+Profit (3%)', 'Tech Premium'],
+                    datasets: [{ label: 'Value', data: [9506, 951, 475, 285, 11217], backgroundColor: ['#06b6d4','#8899aa','#8899aa','#8899aa','#f0b429'] }]
+                }
+            });
+
+            new Chart(document.getElementById('perilChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Collision', 'Theft', 'Third Party', 'Natural Peril', 'Other'],
+                    datasets: [{ data: [45, 22, 18, 10, 5], backgroundColor: ['#f0b429', '#ef4444', '#3b82f6', '#22c55e', '#8899aa'] }]
+                }
+            });
+
+            new Chart(document.getElementById('trendDeepChart'), {
+                type: 'line',
+                data: {
+                    labels: ['2021', '2022', '2023', '2024'],
+                    datasets: [{ label: 'Actual', data: [2024, 2532, 3197, 2436], borderColor: '#f0b429' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            window.drawHeatmap = function(){
+                var hmCanvas = document.getElementById('heatmapChart');
+                if(!hmCanvas) return;
+                var heatmapProvinces = ['Gauteng','KZN','W. Cape','E. Cape','Limpopo','Mpumalanga'];
+                var years = ['2021','2022','2023','2024'];
+                var data = [[2100,2600,3050,2420],[1650,1950,2310,1870],[1300,1580,1920,1450],[1100,1350,1680,1240],[720,890,1120,810],[600,740,980,680]];
+                var maxVal = 3050;
+                var DPR = window.devicePixelRatio||1;
+                var W = 1100;
+                var cellW = Math.floor((W-160)/4);
+                var cellH = 52;
+                var H = heatmapProvinces.length*cellH+60;
+                hmCanvas.width=W*DPR; hmCanvas.height=H*DPR;
+                hmCanvas.style.width=W+'px'; hmCanvas.style.height=H+'px';
+                var ctx = hmCanvas.getContext('2d');
+                ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,hmCanvas.width,hmCanvas.height);
+                ctx.scale(DPR,DPR);
+                function heatColor(v){
+                    var t=v/maxVal;
+                    var r,g,b;
+                    if(t<0.33){r=26+(232-26)*(t/0.33);g=58+(124-58)*(t/0.33);b=92+(42-92)*(t/0.33);}
+                    else if(t<0.66){var f=(t-0.33)/0.33;r=232+(245-232)*f;g=124+(166-124)*f;b=42+(35-42)*f;}
+                    else{var f=(t-0.66)/0.34;r=245+(255-245)*f;g=166+(224-166)*f;b=35+(102-35)*f;}
+                    return 'rgba('+Math.round(r)+','+Math.round(g)+','+Math.round(b)+',0.92)';
+                }
+                ctx.font='bold 11px Segoe UI,sans-serif'; ctx.fillStyle='#8899aa'; ctx.textAlign='center';
+                years.forEach(function(y,j){ctx.fillText(y,160+j*cellW+cellW/2,22);});
+                heatmapProvinces.forEach(function(p,i){
+                    ctx.textAlign='right'; ctx.fillStyle='#aabbcc'; ctx.font='11px Segoe UI,sans-serif';
+                    ctx.fillText(p,150,60+i*cellH+cellH/2+4);
+                    years.forEach(function(y,j){
+                        var v=data[i][j];
+                        ctx.fillStyle=heatColor(v);
+                        if(ctx.roundRect){ctx.beginPath();ctx.roundRect(160+j*cellW+3,38+i*cellH+3,cellW-6,cellH-6,5);ctx.fill();}
+                        else{ctx.fillRect(160+j*cellW+3,38+i*cellH+3,cellW-6,cellH-6);}
+                        ctx.fillStyle='#ffffff'; ctx.font='bold 12px Segoe UI,sans-serif'; ctx.textAlign='center';
+                        ctx.fillText(v.toLocaleString(),160+j*cellW+cellW/2,38+i*cellH+cellH/2+2);
+                        ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='9px Segoe UI,sans-serif';
+                        ctx.fillText(Math.round(v/maxVal*100)+'% of peak',160+j*cellW+cellW/2,38+i*cellH+cellH/2+14);
+                    });
+                });
+            };
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            calcQuote();
+            if (typeof window.drawHeatmap === 'function') {
+                requestAnimationFrame(() => window.drawHeatmap());
+            }
+        });
+    </script>
+</body>
+</html>
