@@ -14,16 +14,7 @@
             --border: rgba(240,180,41,0.15); --card-bg: #101828; --radius: 10px;
         }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
-        #auth-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:10000; display:flex; align-items:center; justify-content:center; }
-        .auth-card { background:var(--card-bg); border:1px solid var(--border); padding:40px; border-radius:var(--radius); text-align:center; max-width:400px; width:90%; box-shadow:0 20px 50px rgba(0,0,0,0.5); }
-        .auth-card h2 { color:var(--gold); margin-bottom:24px; font-size:1.4rem; }
-        .auth-card input { width:100%; padding:12px; margin-bottom:16px; background:var(--bg3); border:1px solid var(--border); color:white; border-radius:6px; outline:none; text-align:center; font-size:1.1rem; }
-        .auth-card button { background:var(--gold); color:var(--bg); border:none; padding:12px 24px; border-radius:6px; font-weight:700; cursor:pointer; width:100%; font-size:1rem; }
-        #auth-error { color:var(--red); font-size:0.85rem; margin-top:12px; display:none; }
-        
-        /* App Content starts as empty placeholder */
-        #app-content { display:none; }
-        
+        #app-content { display:block; }
         .header { background:linear-gradient(135deg,#0a0f1e 0%,#141b2f 100%); border-bottom:1px solid var(--border); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
         .header-title { display:flex; align-items:center; gap:12px; }
         .header-title h1 { font-size:1.4rem; color:var(--gold); letter-spacing:0.5px; }
@@ -45,126 +36,79 @@
     </style>
 </head>
 <body>
-    <div id="auth-overlay">
-        <div class="auth-card">
-            <h2>Access Required</h2>
-            <input type="password" id="pass-field" placeholder="Enter Password" onkeypress="if(event.keyCode===13)checkPass()">
-            <button onclick="checkPass()">Unlock Dashboard</button>
-            <div id="auth-error">Incorrect password. Please try again.</div>
-        </div>
-    </div>
-
     <div id="app-content">
-        <!-- Dashboard HTML is injected here only after successful auth -->
-    </div>
-
-    <script>
-        // Encrypted-ish/Hidden Data structure to prevent easy source-viewing leaks
-        // In a real app, this would be a fetch() call to a protected endpoint.
-        // For this demo 'hotfix', we store the HTML as a string that only gets 
-        // injected into the DOM after the password check passes.
-        
-        const DASHBOARD_HTML = `
-            <div class="header">
-                <div class="header-title">
-                    <h1>FSG Fleet Command Center</h1>
-                    <span style="font-size:0.7rem; background:var(--gold); color:var(--bg); padding:2px 6px; border-radius:10px; font-weight:bold;">v2.0</span>
-                </div>
-                <div style="font-size:0.8rem; color:var(--muted)">Prepared by Incasu (Pty) Ltd • February 2026</div>
+        <div class="header">
+            <div class="header-title">
+                <h1>FSG Fleet Command Center</h1>
+                <span style="font-size:0.7rem; background:var(--gold); color:var(--bg); padding:2px 6px; border-radius:10px; font-weight:bold;">v2.0</span>
             </div>
-            <div class="tab-bar">
-                <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-                <button class="tab-btn" onclick="switchTab('actuarial')">Actuarial Build</button>
-                <button class="tab-btn" onclick="switchTab('bombing')">Bombing Peril</button>
-                <button class="tab-btn" onclick="switchTab('quote')">Quote Engine</button>
+            <div style="font-size:0.8rem; color:var(--muted)">Prepared by Incasu (Pty) Ltd • February 2026</div>
+        </div>
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab(this,'overview')">Overview</button>
+            <button class="tab-btn" onclick="switchTab(this,'actuarial')">Actuarial Build</button>
+            <button class="tab-btn" onclick="switchTab(this,'bombing')">Bombing Peril</button>
+            <button class="tab-btn" onclick="switchTab(this,'quote')">Quote Engine</button>
+        </div>
+        <div id="tab-overview" class="tab-content active">
+            <div class="kpi-grid">
+                <div class="kpi-card"><div class="label">Total Incidents</div><div class="value">10,189</div></div>
+                <div class="kpi-card"><div class="label">Fleet Size</div><div class="value">6,061</div></div>
+                <div class="kpi-card"><div class="label">Annual Frequency</div><div class="value">10.51%</div></div>
+                <div class="kpi-card"><div class="label">Technical Premium</div><div class="value">R11,217</div></div>
             </div>
-            
-            <div id="tab-overview" class="tab-content active">
-                <div class="kpi-grid">
-                    <div class="kpi-card"><div class="label">Total Incidents</div><div class="value">10,189</div></div>
-                    <div class="kpi-card"><div class="label">Fleet Size</div><div class="value">6,061</div></div>
-                    <div class="kpi-card"><div class="label">Annual Frequency</div><div class="value">10.51%</div></div>
-                    <div class="kpi-card"><div class="label">Technical Premium</div><div class="value">R11,217</div></div>
-                </div>
-                <div class="chart-row">
-                    <div class="card"><h3>Incident Trend</h3><div class="chart-container"><canvas id="trendChart"></canvas></div></div>
-                    <div class="card"><h3>Regional Distribution</h3><div class="chart-container"><canvas id="regionChart"></canvas></div></div>
-                </div>
+            <div class="chart-row">
+                <div class="card"><h3>Incident Trend</h3><div class="chart-container"><canvas id="trendChart"></canvas></div></div>
+                <div class="card"><h3>Regional Distribution</h3><div class="chart-container"><canvas id="regionChart"></canvas></div></div>
             </div>
-
-            <div id="tab-actuarial" class="tab-content">
-                <div class="card">
-                    <h3>Step-by-Step Actuarial Derivation</h3>
-                    <table class="data-table">
-                        <thead><tr><th>Step</th><th>Formula</th><th>Result</th></tr></thead>
-                        <tbody>
-                            <tr><td>1. Exposure</td><td>n=6,061 × T=4</td><td>24,244 vy</td></tr>
-                            <tr><td>2. Annual λ</td><td>10,189 / 24,244</td><td>10.51% p.v.y.</td></tr>
-                            <tr><td>3. Severity (Cap)</td><td>Fixed demo constant</td><td>R90,476</td></tr>
-                            <tr><td>4. Pure Premium</td><td>λ × μcap</td><td>R9,506</td></tr>
-                            <tr><td>5. Tech Premium</td><td>PP × 1.18</td><td>R11,217</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+        </div>
+        <div id="tab-actuarial" class="tab-content">
+            <div class="card">
+                <h3>Step-by-Step Actuarial Derivation</h3>
+                <table class="data-table">
+                    <thead><tr><th>Step</th><th>Formula</th><th>Result</th></tr></thead>
+                    <tbody>
+                        <tr><td>1. Exposure</td><td>n=6,061 × T=4</td><td>24,244 vy</td></tr>
+                        <tr><td>2. Annual λ</td><td>10,189 / 24,244</td><td>10.51% p.v.y.</td></tr>
+                        <tr><td>3. Severity (Cap)</td><td>Fixed demo constant</td><td>R90,476</td></tr>
+                        <tr><td>4. Pure Premium</td><td>λ × μcap</td><td>R9,506</td></tr>
+                        <tr><td>5. Tech Premium</td><td>PP × 1.18</td><td>R11,217</td></tr>
+                    </tbody>
+                </table>
             </div>
-            
-            <div id="tab-bombing" class="tab-content">
-                <div class="kpi-grid">
-                    <div class="kpi-card"><div class="label">Bombing Incidents</div><div class="value">105</div></div>
-                    <div class="kpi-card"><div class="label">Total Cost Est.</div><div class="value">R83.6m</div></div>
-                </div>
+        </div>
+        <div id="tab-bombing" class="tab-content">
+            <div class="kpi-grid">
+                <div class="kpi-card"><div class="label">Bombing Incidents</div><div class="value">105</div></div>
+                <div class="kpi-card"><div class="label">Total Cost Est.</div><div class="value">R83.6m</div></div>
             </div>
-            
-            <div id="tab-quote" class="tab-content">
-                <div class="card">
-                    <h3>Interactive Quote Engine</h3>
-                    <div style="padding:20px; background:var(--bg3); border-radius:8px;">
-                        <p>Adjust parameters to model technical premium.</p>
-                        <div style="margin-top:20px;">
-                            <label>Fleet Size: <input type="range" min="1000" max="10000" value="6061" style="width:100%"></label>
-                        </div>
+        </div>
+        <div id="tab-quote" class="tab-content">
+            <div class="card">
+                <h3>Interactive Quote Engine</h3>
+                <div style="padding:20px; background:var(--bg3); border-radius:8px;">
+                    <p>Adjust parameters to model technical premium.</p>
+                    <div style="margin-top:20px;">
+                        <label>Fleet Size: <input type="range" min="1000" max="10000" value="6061" style="width:100%"></label>
                     </div>
                 </div>
             </div>
-        `;
-
-        function checkPass() {
-            const pass = document.getElementById('pass-field').value;
-            // The password is still visible here, but the data itself is no longer in the initial DOM tree.
-            // This prevents "View Source" from showing the KPIs immediately.
-            if (pass === 'ccic123') {
-                document.getElementById('auth-overlay').style.display = 'none';
-                const app = document.getElementById('app-content');
-                app.style.display = 'block';
-                app.innerHTML = DASHBOARD_HTML;
-                initCharts();
-            } else {
-                document.getElementById('auth-error').style.display = 'block';
-                document.getElementById('pass-field').value = '';
-            }
-        }
-
-        function switchTab(name) {
+        </div>
+    </div>
+    <script>
+        function switchTab(btn, name) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            event.target.classList.add('active');
+            btn.classList.add('active');
             document.getElementById('tab-' + name).classList.add('active');
         }
-
         function initCharts() {
             const ctx1 = document.getElementById('trendChart').getContext('2d');
-            new Chart(ctx1, {
-                type: 'bar',
-                data: { labels: ['2021', '2022', '2023', '2024'], datasets: [{ label: 'Incidents', data: [2024, 2532, 3197, 2436], backgroundColor: '#f0b429' }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
+            new Chart(ctx1, { type: 'bar', data: { labels: ['2021','2022','2023','2024'], datasets: [{ label: 'Incidents', data: [2024,2532,3197,2436], backgroundColor: '#f0b429' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
             const ctx2 = document.getElementById('regionChart').getContext('2d');
-            new Chart(ctx2, {
-                type: 'doughnut',
-                data: { labels: ['Gauteng', 'KZN', 'WC', 'Other'], datasets: [{ data: [3100, 2000, 1800, 3289], backgroundColor: ['#f0b429', '#ef4444', '#3b82f6', '#8899aa'] }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+            new Chart(ctx2, { type: 'doughnut', data: { labels: ['Gauteng','KZN','WC','Other'], datasets: [{ data: [3100,2000,1800,3289], backgroundColor: ['#f0b429','#ef4444','#3b82f6','#8899aa'] }] }, options: { responsive: true, maintainAspectRatio: false } });
         }
+        window.addEventListener('DOMContentLoaded', initCharts);
     </script>
 </body>
 </html>
