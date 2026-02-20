@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FSG Fleet Command Center v1.2</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --bg:#0a0f1e;--bg2:#0f1629;--bg3:#141b2f;--bg4:#1a2240;
+            --gold:#f0b429;--gold2:#d4a017;--white:#f0f0f0;--muted:#8899aa;
+            --green:#22c55e;--red:#ef4444;--blue:#3b82f6;--cyan:#06b6d4;
+            --border:rgba(240,180,41,0.15);--card-bg:#101828;
+            --radius:10px;
+        }
+        html{font-size:14px}
+        body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--white);min-height:100vh;line-height:1.5}
+        a{color:var(--gold)}
+        h1,h2,h3,h4{font-weight:600}
+        .header{background:linear-gradient(135deg,#0a0f1e 0%,#141b2f 100%);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+        .header-title{display:flex;align-items:center;gap:12px}
+        .header-title h1{font-size:1.4rem;color:var(--gold);letter-spacing:0.5px}
+        .header-title .version{font-size:0.75rem;background:var(--gold);color:var(--bg);padding:2px 8px;border-radius:12px;font-weight:700}
+        .header-meta{font-size:0.8rem;color:var(--muted)}
+        .tab-bar{display:flex;background:var(--bg2);border-bottom:2px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch}
+        .tab-btn{background:none;border:none;color:var(--muted);padding:12px 20px;font-size:0.85rem;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all 0.2s;font-weight:500}
+        .tab-btn:hover{color:var(--white);background:rgba(240,180,41,0.05)}
+        .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(240,180,41,0.08)}
+        .tab-content{display:none;padding:24px;max-width:1400px;margin:0 auto}
+        .tab-content.active{display:block}
+        .card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+        .card h3{color:var(--gold);margin-bottom:12px;font-size:1rem}
+        .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+        .kpi-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center}
+        .kpi-card .label{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+        .kpi-card .value{font-size:1.8rem;font-weight:700;color:var(--gold)}
+        .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+        .chart-container{position:relative;height:320px;width:100%}
+        .data-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+        .data-table th{background:var(--bg3);color:var(--gold);padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)}
+        .data-table td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.05)}
+        .slider-group{margin-bottom:12px}
+        .slider-group label{display:flex;justify-content:space-between;font-size:0.8rem;color:var(--muted)}
+        .slider-group label span{color:var(--gold);font-weight:600}
+        .slider-group input[type="range"]{width:100%;accent-color:var(--gold)}
+        .map-container{position:relative;max-width:700px;margin:0 auto}
+        .province-label{font-size:11px;fill:#fff;font-weight:600;text-anchor:middle;pointer-events:none}
+        .province-count{font-size:9px;fill:var(--gold);font-weight:700;text-anchor:middle;pointer-events:none}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <h1>FSG Fleet Command Center</h1>
+            <span class="version">v1.2</span>
+        </div>
+        <div class="header-meta">SSOT-Governed Actuarial Dashboard • Fleet: 6,061 vehicles</div>
+    </div>
+    <div class="tab-bar">
+        <button class="tab-btn active" data-tab="overview">Overview</button>
+        <button class="tab-btn" data-tab="calculations">Calculations</button>
+        <button class="tab-btn" data-tab="quote">Quote Engine</button>
+        <button class="tab-btn" data-tab="analytics">Analytics</button>
+        <button class="tab-btn" data-tab="heatmap">Heat Map</button>
+    </div>
+
+    <div id="tab-overview" class="tab-content active">
+        <div class="card">
+            <h3>Fleet Risk Overview</h3>
+            <div class="kpi-grid">
+                <div class="kpi-card"><div class="label">Incidents</div><div class="value">10,189</div></div>
+                <div class="kpi-card"><div class="label">Frequency</div><div class="value">10.51%</div></div>
+                <div class="kpi-card"><div class="label">TP / Vehicle</div><div class="value">R11,217</div></div>
+                <div class="kpi-card"><div class="label">Fleet Premium</div><div class="value">R67,987,172</div></div>
+            </div>
+            <div class="chart-row">
+                <div class="chart-container"><canvas id="trendChart"></canvas></div>
+                <div class="chart-container"><canvas id="regionChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-calculations" class="tab-content">
+        <div class="card">
+            <h3>Actuarial Calculations</h3>
+            <div class="data-table">
+                <table>
+                    <thead><tr><th>Step</th><th>Formula</th><th>Result</th></tr></thead>
+                    <tbody>
+                        <tr><td>Exposure</td><td>n × T</td><td>24,244 vehicle-years</td></tr>
+                        <tr><td>Frequency</td><td>Incidents / E</td><td>0.1051</td></tr>
+                        <tr><td>Pure Premium</td><td>λ × μ</td><td>R9,506</td></tr>
+                        <tr><td>Technical Premium</td><td>PP × 1.18</td><td>R11,217</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-quote" class="tab-content">
+        <div class="card">
+            <h3>Quote Engine</h3>
+            <div class="slider-group">
+                <label>Fleet Size <span id="v-fleet">6061</span></label>
+                <input type="range" id="s-fleet" min="1000" max="10000" value="6061" oninput="update()">
+            </div>
+            <div class="slider-group">
+                <label>Risk Multiplier <span id="v-risk">1.00x</span></label>
+                <input type="range" id="s-risk" min="0.5" max="2.0" step="0.05" value="1.0" oninput="update()">
+            </div>
+            <div class="kpi-card" style="margin-top:20px">
+                <div class="label">Estimated Annual Premium</div>
+                <div class="value" id="res-prem">R67,987,172</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-heatmap" class="tab-content">
+        <div class="card">
+            <h3>Risk Heat Map</h3>
+            <div id="mapContainer" class="map-container"></div>
+        </div>
+    </div>
+
+    <script>
+        const SSOT = { fleetSize: 6061, years: 4, exposure: 24244, baseIncidents: 10189, lambdaAnnual: 0.1051, severityMu: 90476, purePremium: 9506, loading: 0.18, technicalPremium: 11217, fleetPremium: 67987172 };
+        const REGION_DATA = [{name:'Gauteng',incidents:3200},{name:'KwaZulu-Natal',incidents:2100},{name:'Western Cape',incidents:1800},{name:'Eastern Cape',incidents:900},{name:'Limpopo',incidents:750},{name:'Mpumalanga',incidents:600},{name:'North West',incidents:450},{name:'Free State',incidents:380},{name:'Northern Cape',incidents:109}];
+
+        function update() {
+            const f = document.getElementById('s-fleet').value;
+            const r = document.getElementById('s-risk').value;
+            document.getElementById('v-fleet').textContent = f;
+            document.getElementById('v-risk').textContent = r + 'x';
+            const res = f * SSOT.technicalPremium * r;
+            document.getElementById('res-prem').textContent = 'R' + Math.round(res).toLocaleString('en-ZA');
+        }
+
+        function initCharts() {
+            Chart.defaults.color = '#8899aa';
+            new Chart(document.getElementById('trendChart'), { type: 'bar', data: { labels: ['2021','2022','2023','2024'], datasets: [{ label: 'Incidents', data: [1969, 2462, 3108, 2213], backgroundColor: '#f0b429' }] } });
+            new Chart(document.getElementById('regionChart'), { type: 'doughnut', data: { labels: REGION_DATA.map(r=>r.name), datasets: [{ data: REGION_DATA.map(r=>r.incidents), backgroundColor: ['#ef4444','#f97316','#f0b429','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#6366f1'] }] } });
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => { initCharts(); });
+    </script>
+</body>
+</html>
