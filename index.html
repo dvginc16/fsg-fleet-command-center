@@ -95,17 +95,17 @@
         <div class="kpi-grid">
             <div class="kpi-card">
                 <div class="label">Total Incidents (2021-24)</div>
-                <div class="value">8,165</div>
+                <div class="value">10,189</div>
                 <div class="footnote">Excl. bombing (105 incidents)</div>
             </div>
             <div class="kpi-card">
                 <div class="label">Fleet Size (Avg)</div>
                 <div class="value">6,061</div>
-                <div class="footnote">vehicles | >8,165<</div>
+                <div class="footnote">vehicles | 24,244 veh-years</div>
             </div>
             <div class="kpi-card">
                 <div class="label">Annual Frequency (&lambda;)</div>
-                <div class="value"18,183 veh-years/div>
+                <div class="value">10.51%</div>
                 <div class="footnote">per vehicle-year</div>
             </div>
             <div class="kpi-card">
@@ -115,12 +115,12 @@
             </div>
             <div class="kpi-card">
                 <div class="label">Pure Premium (PP)</div>
-                <div class="value">R13,538</div>
+                <div class="value">R9,506</div>
                 <div class="footnote">&lambda; &times; &mu; (demo cap applied)</div>
             </div>
             <div class="kpi-card">
                 <div class="label">Technical Premium (TP)</div>
-                <div class="value">R17,532</div>
+                <div class="value">R11,217</div>
                 <div class="footnote">PP &times; (1 + 18% loading)</div>
             </div>
         </div>
@@ -148,7 +148,7 @@
                     <tr><td>Exposure (E = n &times; T)</td><td>24,244 vehicle-years</td><td>Calculated</td></tr>
                     <tr><td>Total incidents (all perils)</td><td>10,294</td><td>SSOT verified</td></tr>
                     <tr><td>Bombing incidents</td><td>105</td><td>SSOT verified</td></tr>
-                    <tr><td>Base incidents (ex bombing)</td><td>8,165</td><td>SSOT verified</td></tr>
+                    <tr><td>Base incidents (ex bombing)</td><td>10,189</td><td>SSOT verified</td></tr>
                     <tr><td>Total claims cost (S)</td><td>R2,193,548,387</td><td>SSOT verified</td></tr>
                     <tr><td>Annual frequency (&lambda;)</td><td>10.51% per vehicle-year</td><td>10,189 / 24,244 vy</td></tr>
                     <tr><td>Severity &mu; (Raw)</td><td>R215,289 per incident</td><td>R2,193,548,387 / 10,189</td></tr>
@@ -171,8 +171,8 @@
                     <tr><td>1. Exposure</td><td>E = n &times; T</td><td>n=6,061 &times; T=4</td><td><strong>24,244 vy</strong></td></tr>
                     <tr><td>2. Claim Frequency</td><td>&lambda; = I / E</td><td>10,189 / 24,244</td><td><strong>10.51% p.a.</strong></td></tr>
                     <tr><td>3. Average Severity</td><td>&mu; = S / I</td><td>R2,193,548,387 / 10,189</td><td><strong>R215,289 raw &rarr; R90,476 demo</strong></td></tr>
-                    <tr><td>4. Pure Premium</td><td>PP = &lambda; &times; &mu;</td><td>0.1051 &times; R90,476</td><td><strong>R13,538</strong></td></tr>
-                    <tr><td>5. Technical Premium</td><td>TP = PP &times; (1+L)</td><td>R9,506 &times; 1.18</td><td><strong>R17,532</strong></td></tr>
+                    <tr><td>4. Pure Premium</td><td>PP = &lambda; &times; &mu;</td><td>0.1051 &times; R90,476</td><td><strong>R9,506</strong></td></tr>
+                    <tr><td>5. Technical Premium</td><td>TP = PP &times; (1+L)</td><td>R9,506 &times; 1.18</td><td><strong>R11,217</strong></td></tr>
                     <tr><td>6. Fleet Premium</td><td>FP = TP &times; n</td><td>R11,217 &times; 6,061</td><td><strong>R67,987,172</strong></td></tr>
                 </tbody>
             </table>
@@ -275,12 +275,12 @@
             <h3>Quote Breakdown</h3>
             <table class="data-table">
                 <tbody>
-                    <tr><td>Pure Premium (&lambda;&times;&mu;)</td><td id="qt-pp">R13,538</td></tr>
+                    <tr><td>Pure Premium (&lambda;&times;&mu;)</td><td id="qt-pp">R9,506</td></tr>
                     <tr><td>Loading Factor</td><td id="qt-load">18%</td></tr>
                     <tr><td>Discount</td><td id="qt-discount">0%</td></tr>
                     <tr><td>Severity Sensitivity</td><td id="qt-sev-mult">1.00x</td></tr>
                     <tr><td>Exposure Sensitivity</td><td id="qt-exp-mult">1.00x</td></tr>
-                    <tr><td>Technical Premium (TP)</td><td id="qt-tp">R17,532</td></tr>
+                    <tr><td>Technical Premium (TP)</td><td id="qt-tp">R11,217</td></tr>
                     <tr><td>Risk Multiplier</td><td id="qt-risk">1.00x</td></tr>
                     <tr><td>Fleet Size</td><td id="qt-fleet">6,061</td></tr>
                     <tr style="border-top:2px solid var(--gold);"><td><strong>Total Fleet Premium</strong></td><td id="qt-total"><strong>R67,987,172</strong></td></tr>
@@ -337,7 +337,7 @@
             <h3>Actuarial Methodology & Audit Trail</h3>
             <div class="audit-row">
                 <div class="audit-label">Exposure Basis</div>
-                <div class="audit-value">6,061 vehicles &times; 3 years = 18,183 vehicle-years</div>
+                <div class="audit-value">6,061 vehicles &times; 4 years = 24,244 vehicle-years</div>
             </div>
             <div class="audit-row">
                 <div class="audit-label">Severity Normalization</div>
@@ -359,10 +359,10 @@
     <script>
         const SSOT = {
             fleetSize: 6061,
-            years: 3,
-            exposure: 18183,
-            baseIncidents: 8165,
-                    lambdaAnnual: 0.1497,
+            years: 4,
+            exposure: 24244,
+            baseIncidents: 10189,
+            lambdaAnnual: 0.1051,
             severityMu: 90476,
             loading: 0.18
         };
@@ -453,7 +453,7 @@
                 type: 'bar',
                 data: {
                     labels: ['2021', '2022', '2023', '2024'],
-                    datasets: [{ label: 'Incidents', data: [2532, 3197, 2436], backgroundColor: '#f0b429' }]
+                    datasets: [{ label: 'Incidents', data: [2024, 2532, 3197, 2436], backgroundColor: '#f0b429' }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
@@ -512,7 +512,7 @@
                 type: 'line',
                 data: {
                     labels: ['2021', '2022', '2023', '2024'],
-                    datasets: [{ label: 'Actual', data: [2532, 3197, 2436], borderColor: '#f0b429' }]
+                    datasets: [{ label: 'Actual', data: [2024, 2532, 3197, 2436], borderColor: '#f0b429' }]
                 }
             });
 
