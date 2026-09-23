@@ -55,6 +55,19 @@ This must run where the files are, in `Desktop\1 FINAL - WORK`. Read only.
 
 End with **SAFE TO POST**, or exactly what needs fixing.
 
+## Teams reply (added 23 Sep)
+
+Ready to post, both in `demo/`:
+
+- `TEAMS REPLY - Power BI demo card (2026-09-23) (PUBLIC).png`: Incasu house-style card
+  (Segoe UI metrics, accent #B3421C, stone panel #F6F4F0, taken from the Setup Note). Post it first.
+- `TEAMS REPLY - Power BI demo (2026-09-23) (PUBLIC).md`: the message to paste under it,
+  plus which video and zip to attach.
+
+Every claim on the card and in the message holds for any run of the kit: two independent
+checks, zero numbers moved by the edit, about five minutes to run. None of it depends on the
+invented figures.
+
 ## Background: why the 17 Sep video looked blurry
 
 It was 1920x1080 at 20 fps and a **722 kbps** video bitrate, which is about a fifth of
